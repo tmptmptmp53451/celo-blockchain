@@ -244,6 +244,7 @@ func (pm *ProtocolManager) handle(p *peer) error {
 	// Ignore maxPeers if this is a trusted peer
 	// In server mode we try to check into the client pool after handshake
 	if pm.lightSync && pm.peers.Len() >= pm.maxPeers && !p.Peer.Info().Network.Trusted {
+		p.Log().Debug(fmt.Sprintf("Les handling failed, have %d peers with a max of %d", pm.peers.Len(), pm.maxPeers))
 		return p2p.DiscTooManyPeers
 	}
 
@@ -268,6 +269,7 @@ func (pm *ProtocolManager) handle(p *peer) error {
 		if ok {
 			id := addr.IP.String()
 			if !pm.clientPool.connect(id, func() { go pm.removePeer(p.id) }) {
+				p.Log().Debug(fmt.Sprintf("Unable to connect peer to client pool"))
 				return p2p.DiscTooManyPeers
 			}
 			defer pm.clientPool.disconnect(id)
