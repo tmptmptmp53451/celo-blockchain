@@ -1212,7 +1212,7 @@ func (pc *peerConnection) RequestHeadersByHash(origin common.Hash, amount int, s
 }
 
 func (pc *peerConnection) RequestHeadersByNumber(origin uint64, amount int, skip int, reverse bool) error {
-	p.Log().Info("RequestHeadersByNumber attempt")
+	pc.peer.Log().Info("RequestHeadersByNumber attempt")
 	reqID := genReqID()
 	rq := &distReq{
 		getCost: func(dp distPeer) uint64 {
@@ -1231,7 +1231,7 @@ func (pc *peerConnection) RequestHeadersByNumber(origin uint64, amount int, skip
 	}
 	_, ok := <-pc.manager.reqDist.queue(rq)
 	if !ok {
-		p.Log().Info("RequestHeadersByNumber failed")
+		pc.peer.Log().Info("RequestHeadersByNumber failed")
 		return light.ErrNoPeers
 	}
 	return nil

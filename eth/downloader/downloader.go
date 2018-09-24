@@ -1064,7 +1064,7 @@ func (d *Downloader) fetchParts(errCancel error, deliveryCh chan dataPack, deliv
 		case <-update:
 			// Short circuit if we lost all our peers
 			if d.peers.Len() == 0 {
-				log().Info("lost all peers")
+				log.Info("lost all peers")
 				return errNoPeers
 			}
 			// Check for fetch request timeouts and demote the responsible peers
