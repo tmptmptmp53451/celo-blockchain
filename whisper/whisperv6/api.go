@@ -305,6 +305,8 @@ func (api *PublicWhisperAPI) Post(ctx context.Context, req NewMessage) (hexutil.
 
 	// ensure that the message PoW meets the node's minimum accepted PoW
 	if req.PowTarget < api.w.MinPow() {
+		fmt.Printf("%+v\n", req)
+		log.Debug("PoW too low", "target", req.PowTarget, "v", api.w.MinPow())
 		return nil, ErrTooLowPoW
 	}
 

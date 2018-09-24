@@ -204,6 +204,7 @@ func (c *ChtIndexerBackend) fetchMissingNodes(ctx context.Context, section uint6
 			r.Proof.Store(batch)
 			return batch.Write()
 		case ErrNoPeers:
+			log.Info("fetchMissingNodes")
 			// if there are no peers to serve, retry later
 			select {
 			case <-ctx.Done():
@@ -332,6 +333,7 @@ func (b *BloomTrieIndexerBackend) fetchMissingNodes(ctx context.Context, section
 				r := &BloomRequest{BloomTrieRoot: root, BloomTrieNum: section - 1, BitIdx: bitIndex, SectionIdxList: []uint64{section - 1}, Config: b.odr.IndexerConfig()}
 				for {
 					if err := b.odr.Retrieve(ctx, r); err == ErrNoPeers {
+						log.Info("fetchMissingNodes2")
 						// if there are no peers to serve, retry later
 						select {
 						case <-ctx.Done():
