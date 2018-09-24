@@ -209,7 +209,7 @@ func (r *sentReq) stateRequesting() reqStateFn {
 					return r.stateNoMorePeers
 				}
 				// nothing to wait for, no more peers to ask, return with error
-				log.Info("stateRequesting")
+				log.Info("stateRequesting", "event", ev)
 				r.stop(light.ErrNoPeers)
 				// no need to go to stopped state because waiting() already returned false
 				return nil
@@ -300,6 +300,8 @@ func (r *sentReq) tryRequest() {
 			p = <-sent
 		}
 	}
+
+	log.Info("tryRequest", "req", r.req)
 
 	r.eventsCh <- reqPeerEvent{rpSent, p}
 	if p == nil {
