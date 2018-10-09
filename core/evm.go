@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // ChainContext supports retrieving headers and consensus parameters from the
@@ -48,6 +49,7 @@ func NewEVMContext(msg Message, header *types.Header, chain ChainContext, author
 		CanTransfer: CanTransfer,
 		Transfer:    Transfer,
 		GetHash:     GetHashFn(header, chain),
+		GetMinerOf:  GetMinerOfFn(header, chain),
 		Origin:      msg.From(),
 		Coinbase:    beneficiary,
 		BlockNumber: new(big.Int).Set(header.Number),
@@ -81,6 +83,35 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 			}
 		}
 		return common.Hash{}
+	}
+}
+
+// GetMinerOfFn returns a GetMinerOfFunc which retrieves the coinbase by block number
+func GetMinerOfFn(ref *types.Header, chain ChainContext) func(n uint64) common.Address {
+	var cache map[uint64]common.Address
+
+	return func(n uint64) common.Address {
+		// If there's no hash cache yet, make one
+		log.Error("[Celo] GetMinerOfFn", "n", n)
+		if cache == nil {
+			cache = map[uint64]common.Address{
+				ref.Number.Uint64(): ref.Coinbase,
+			}
+		}
+		// Try to fulfill the request from the cache
+		if hash, ok := cache[n]; ok {
+			log.Error("[Celo] From cache", "n", n, "hash", hash)
+			return hash
+		}
+		// Not cached, iterate the blocks and cache the hashes
+		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
+			cache[header.Number.Uint64()] = header.Coinbase
+			if n == header.Number.Uint64() {
+				log.Error("[Celo] Put it in cache", "n", n, "header", header)
+				return header.Coinbase
+			}
+		}
+		return common.Address{}
 	}
 }
 

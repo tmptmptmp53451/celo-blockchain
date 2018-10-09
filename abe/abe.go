@@ -35,6 +35,7 @@ import (
 
 func decryptPhoneNumber(request types.VerificationRequest, account accounts.Account, wallet accounts.Wallet) (string, error) {
 	phoneNumber, err := wallet.Decrypt(account, request.EncryptedPhone, nil, nil)
+	log.Error("[Celo] Attempt descrypting phone", "p", request.EncryptedPhone)
 	if err != nil {
 		return "", err
 	}
@@ -85,15 +86,20 @@ func SendVerificationMessages(receipts []*types.Receipt, block *types.Block, coi
 
 	for _, receipt := range receipts {
 		for _, request := range receipt.VerificationRequests {
+			log.Error("[Celo] Attempt sending verification message")
 			if !bytes.Equal(coinbase.Bytes(), request.Verifier.Bytes()) {
+				log.Error("[Celo] Did not pass coinbase check", "coinbase", coinbase.Bytes(), "verifier", request.Verifier.Bytes())
 				continue
 			}
+
+			log.Error("[Celo] Passed coinbase check")
+
 			phoneNumber, err := decryptPhoneNumber(request, account, wallet)
 			if err != nil {
 				log.Error("[Celo] Failed to decrypt phone number", "err", err)
 				continue
 			}
-			log.Debug(fmt.Sprintf("[Celo] Phone number %s requesting verification", phoneNumber))
+			log.Error(fmt.Sprintf("[Celo] Phone number %s requesting verification", phoneNumber))
 
 			message, err := createVerificationMessage(request, account, wallet)
 			if err != nil {
