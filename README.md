@@ -1,4 +1,4 @@
-## Go Ethereum
+## Go Ethereum (test)
 
 Official golang implementation of the Ethereum protocol.
 
