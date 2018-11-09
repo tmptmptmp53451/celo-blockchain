@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to
@@ -201,7 +202,9 @@ func (c *BoundContract) transact(opts *TransactOpts, contract *common.Address, i
 	}
 	// Figure out the gas allowance and gas price values
 	gasPrice := opts.GasPrice
+	log.Debug("In bound contract transact")
 	if gasPrice == nil {
+		log.Debug("Gas price is nil, suggesting gas price")
 		gasPrice, err = c.transactor.SuggestGasPrice(ensureContext(opts.Context))
 		if err != nil {
 			return nil, fmt.Errorf("failed to suggest gas price: %v", err)
