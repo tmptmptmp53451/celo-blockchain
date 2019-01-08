@@ -277,11 +277,19 @@ func (w *worker) pendingBlock() *types.Block {
 func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
 	w.startCh <- struct{}{}
+
+	if istanbul, ok := self.engine.(consensus.Istanbul); ok {
+		istanbul.Start(self.chain, self.chain.CurrentBlock, self.chain.HasBadBlock)
+	}
 }
 
 // stop sets the running status as 0.
 func (w *worker) stop() {
 	atomic.StoreInt32(&w.running, 0)
+
+	if istanbul, ok := self.engine.(consensus.Istanbul); ok {
+		istanbul.Stop()
+	}
 }
 
 // isRunning returns an indicator whether worker is running or not.
@@ -416,6 +424,9 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
+			if h, ok := self.engine.(consensus.Handler); ok {
+				h.NewChainHead()
+			}
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
 
 		case ev := <-w.chainSideCh:
