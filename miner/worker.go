@@ -278,8 +278,8 @@ func (w *worker) start() {
 	atomic.StoreInt32(&w.running, 1)
 	w.startCh <- struct{}{}
 
-	if istanbul, ok := self.engine.(consensus.Istanbul); ok {
-		istanbul.Start(self.chain, self.chain.CurrentBlock, self.chain.HasBadBlock)
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		istanbul.Start(w.chain, w.chain.CurrentBlock, w.chain.HasBadBlock)
 	}
 }
 
@@ -287,7 +287,7 @@ func (w *worker) start() {
 func (w *worker) stop() {
 	atomic.StoreInt32(&w.running, 0)
 
-	if istanbul, ok := self.engine.(consensus.Istanbul); ok {
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
 		istanbul.Stop()
 	}
 }
@@ -424,7 +424,7 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
-			if h, ok := self.engine.(consensus.Handler); ok {
+			if h, ok := w.engine.(consensus.Handler); ok {
 				h.NewChainHead()
 			}
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)

@@ -133,7 +133,7 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 		chainConfig:    chainConfig,
 		eventMux:       ctx.EventMux,
 		accountManager: ctx.AccountManager,
-		engine:         CreateConsensusEngine(ctx, config, chainConfig, chainDb),
+		engine:         CreateConsensusEngine(ctx, chainConfig, config, chainDb),
 		shutdownChan:   make(chan bool),
 		networkID:      config.NetworkId,
 		gasPrice:       config.MinerGasPrice,
@@ -228,8 +228,7 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (ethdb.Data
 }
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
-func CreateConsensusEngine(ctx *node.ServiceContext, config *Config, chainConfig *params.ChainConfig, db ethdb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
+func CreateConsensusEngine(ctx *node.ServiceContext, chainConfig *params.ChainConfig, config *Config, db ethdb.Database) consensus.Engine { // If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
 	}
@@ -250,7 +249,7 @@ func CreateConsensusEngine(ctx *node.ServiceContext, config *Config, chainConfig
 		return ethash.NewFaker()
 	case ethConfig.PowMode == ethash.ModeTest:
 		log.Warn("Ethash used in test mode")
-		return ethash.NewTester()
+		return ethash.NewTester(config.MinerNotify, config.MinerNoverify)
 	case ethConfig.PowMode == ethash.ModeShared:
 		log.Warn("Ethash used in shared mode")
 		return ethash.NewShared()
@@ -405,19 +404,15 @@ func (s *Ethereum) shouldPreserve(block *types.Block) bool {
 	}
 	return s.isLocalBlock(block)
 }
-// set in js console via admin interface or wrapper from cli flags
-func (self *Ethereum) SetEtherbase(etherbase common.Address) {
-	self.lock.Lock()
-	if _, ok := self.engine.(consensus.Istanbul); ok {
-		log.Error("Cannot set etherbase in Istanbul consensus")
-		return
-	}
-	self.etherbase = etherbase
-	self.lock.Unlock()
 
 // SetEtherbase sets the mining reward address.
 func (s *Ethereum) SetEtherbase(etherbase common.Address) {
 	s.lock.Lock()
+	if _, ok := s.engine.(consensus.Istanbul); ok {
+		log.Error("Cannot set etherbase in Istanbul consensus")
+		s.lock.Unlock()
+		return
+	}
 	s.etherbase = etherbase
 	s.lock.Unlock()
 

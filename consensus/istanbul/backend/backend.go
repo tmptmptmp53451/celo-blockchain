@@ -105,6 +105,11 @@ func (sb *backend) Address() common.Address {
 	return sb.address
 }
 
+// Close implements consensus.Engine. It's a noop for instanbul as there is are no background threads.
+func (sb *backend) Close() error {
+	return nil
+}
+
 // Validators implements istanbul.Backend.Validators
 func (sb *backend) Validators(proposal istanbul.Proposal) istanbul.ValidatorSet {
 	return sb.getValidators(proposal.Number().Uint64(), proposal.Hash())
@@ -176,7 +181,6 @@ func (sb *backend) Commit(proposal istanbul.Proposal, seals [][]byte) error {
 	}
 	// update block's header
 	block = block.WithSeal(h)
-
 	sb.logger.Info("Committed", "address", sb.Address(), "hash", proposal.Hash(), "number", proposal.Number().Uint64())
 	// - if the proposed and committed blocks are the same, send the proposed hash
 	//   to commit channel, which is being watched inside the engine.Seal() function.
@@ -185,6 +189,7 @@ func (sb *backend) Commit(proposal istanbul.Proposal, seals [][]byte) error {
 	//    the next block and the previous Seal() will be stopped.
 	// -- otherwise, a error will be returned and a round change event will be fired.
 	if sb.proposedBlockHash == block.Hash() {
+
 		// feed block hash to Seal() and wait the Seal() result
 		sb.commitCh <- block
 		return nil
@@ -257,8 +262,8 @@ func (sb *backend) CheckSignature(data []byte, address common.Address, sig []byt
 	return nil
 }
 
-// HasPropsal implements istanbul.Backend.HashBlock
-func (sb *backend) HasPropsal(hash common.Hash, number *big.Int) bool {
+// HasProposal implements istanbul.Backend.HashBlock
+func (sb *backend) HasProposal(hash common.Hash, number *big.Int) bool {
 	return sb.chain.GetHeader(hash, number.Uint64()) != nil
 }
 

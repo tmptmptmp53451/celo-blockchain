@@ -340,11 +340,9 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 	defer msg.Discard()
 
 	if handler, ok := pm.engine.(consensus.Handler); ok {
-		pubKey, err := p.ID().Pubkey()
-		if err != nil {
-			return err
-		}
+		pubKey := p.Node().Pubkey()
 		addr := crypto.PubkeyToAddress(*pubKey)
+
 		handled, err := handler.HandleMsg(addr, msg)
 		if handled {
 			return err
@@ -825,10 +823,7 @@ func (pm *ProtocolManager) NodeInfo() *NodeInfo {
 func (self *ProtocolManager) FindPeers(targets map[common.Address]bool) map[common.Address]consensus.Peer {
 	m := make(map[common.Address]consensus.Peer)
 	for _, p := range self.peers.Peers() {
-		pubKey, err := p.ID().Pubkey()
-		if err != nil {
-			continue
-		}
+		pubKey := p.Node().Pubkey()
 		addr := crypto.PubkeyToAddress(*pubKey)
 		if targets[addr] {
 			m[addr] = p

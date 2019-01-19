@@ -111,7 +111,7 @@ type Engine interface {
 	Protocol() Protocol
 }
 
-// Handler should be implemented is the consensus needs to handle and send peer's message
+// Handler should be implemented if the consensus needs to handle and send peer's message
 type Handler interface {
 	// NewChainHead handles a new head block comes
 	NewChainHead() error
