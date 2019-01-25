@@ -54,6 +54,8 @@ var CeloPrecompiledContractsAddressOffset = byte(0xff)
 var requestVerificationAddress = common.BytesToAddress(append([]byte{0}, CeloPrecompiledContractsAddressOffset))
 var getCoinbaseAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 1)))
 var transferAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 2)))
+var proposeValidatorAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 3)))
+var discardValidatorAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 4)))
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
 // contracts used in the Byzantium release.
@@ -71,6 +73,8 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	requestVerificationAddress: &requestVerification{},
 	getCoinbaseAddress:         &getCoinbase{},
 	transferAddress:            &transfer{},
+	proposeValidatorAddress:    &proposeValidator{},
+	discardValidatorAddress:    &discardValidator{},
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
@@ -438,4 +442,49 @@ func (c *transfer) Run(input []byte, caller common.Address, evm *EVM) ([]byte, e
 	}
 	evm.Transfer(evm.StateDB, from, to, value)
 	return input, nil
+}
+
+type ProposeDiscard interface {
+	Propose(address common.Address, auth bool)
+	Discard(address common.Address)
+}
+
+type proposeValidator struct{}
+
+func (c *proposeValidator) RequiredGas(input []byte) uint64 {
+	return params.ProposeValidatorGas
+}
+
+func (c *proposeValidator) Run(input []byte, caller common.Address, evm *EVM) ([]byte, error) {
+	// TODO(jansel): we should have much stricter checks here for who can call this
+	if caller != params.AuthorizedTransferAddress {
+		return nil, fmt.Errorf("Unable to call proposeValidator from unpermissioned address")
+	}
+	validator := common.BytesToAddress(input[0:32])
+	cliqueApi, ok := evm.Context.Engine.APIs(nil)[0].Service.(ProposeDiscard)
+	if !ok {
+		return nil, fmt.Errorf("Not using clique consensus")
+	}
+	cliqueApi.Propose(validator, true)
+	return nil, nil
+}
+
+type discardValidator struct{}
+
+func (c *discardValidator) RequiredGas(input []byte) uint64 {
+	return params.DiscardValidatorGas
+}
+
+func (c *discardValidator) Run(input []byte, caller common.Address, evm *EVM) ([]byte, error) {
+	// TODO(jansel): we should have much stricter checks here for who can call this
+	if caller != params.AuthorizedTransferAddress {
+		return nil, fmt.Errorf("Unable to call discardValidator from unpermissioned address")
+	}
+	validator := common.BytesToAddress(input[0:32])
+	cliqueApi, ok := evm.Context.Engine.APIs(nil)[0].Service.(ProposeDiscard)
+	if !ok {
+		return nil, fmt.Errorf("Not using clique consensus")
+	}
+	cliqueApi.Discard(validator)
+	return nil, nil
 }
