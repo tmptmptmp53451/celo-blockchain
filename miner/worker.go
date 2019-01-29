@@ -800,6 +800,8 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 
 		case nil:
 			// Everything ok, collect the logs and shift in the next transaction from the same account
+			log.Trace("Transaction added to block", "hash", tx.Hash())
+
 			coalescedLogs = append(coalescedLogs, logs...)
 			w.current.tcount++
 			txs.Shift()
