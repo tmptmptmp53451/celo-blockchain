@@ -1007,6 +1007,8 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 
 			log.Info("Commit new mining work", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
 				"uncles", len(uncles), "txs", w.current.tcount, "gas", block.GasUsed(), "fees", feesEth, "elapsed", common.PrettyDuration(time.Since(start)))
+
+			// TODO(Tim) -- this is the wrong place. Verification messages will get sent before this block is actually signed (and it may never be) 
 			abe.SendVerificationMessages(w.current.receipts, block, w.coinbase, w.eth.AccountManager(), w.verificationService, w.verificationRewards)
 
 		case <-w.exitCh:

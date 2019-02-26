@@ -142,6 +142,8 @@ func (c *core) broadcast(msg *message) {
 		logger.Error("Failed to broadcast message", "msg", msg, "err", err)
 		return
 	}
+
+	logger.Trace("SendIstanbulMsg", "msg", msg)
 }
 
 func (c *core) currentView() *istanbul.View {

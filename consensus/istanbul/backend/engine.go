@@ -415,21 +415,32 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		return err
 	}
 
+	log.Debug("Start Seal", "number", number)
+
 	// wait for the timestamp of header, use this to adjust the block period
 	delay := time.Unix(block.Header().Time.Int64(), 0).Sub(now())
 	select {
 	case <-time.After(delay):
 	case <-stop:
+		log.Debug("Stop Seal 1", "number", number)
 		return nil
 	}
 
-	// get the proposed block hash and clear it if the seal() is completed.
+	// If we are not already proposing a block, lock on to this one to propose.
 	sb.sealMu.Lock()
+	if sb.proposedBlockHash != (common.Hash{}) {
+		log.Debug("Already proposed", "number", number, "hash", sb.proposedBlockHash, "rejhash", block.Hash())
+		sb.sealMu.Unlock()
+		return nil
+	}
+
 	sb.proposedBlockHash = block.Hash()
 	clear := func() {
 		sb.proposedBlockHash = common.Hash{}
 		sb.sealMu.Unlock()
 	}
+
+	log.Debug("Start Seal 2", "number", number, "hash", block.Hash())
 
 	// post block into Istanbul engine
 	go sb.EventMux().Post(istanbul.RequestEvent{
@@ -441,6 +452,7 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		for {
 			select {
 			case <-stop:
+				log.Debug("Stop Seal 2", "number", number)
 				return
 			case result := <-sb.commitCh:
 
@@ -448,8 +460,10 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, results
 				// return the result. Otherwise, keep waiting the next hash.
 				if block.Hash() == result.Hash() {
 					results <- result
+					log.Debug("Done Seal", "number", number, "hash", block.Hash())
 					return
 				}
+				log.Debug("Wrong Seal", "number", number, "hash", result.Hash())
 			}
 		}
 	}()
