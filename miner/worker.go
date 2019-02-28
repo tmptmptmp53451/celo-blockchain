@@ -359,12 +359,15 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 	for {
 		select {
 		case <-w.startCh:
+
 			clearPending(w.chain.CurrentBlock().NumberU64())
+			log.Debug("StartChannel get", "number", w.chain.CurrentBlock().NumberU64())
 			timestamp = time.Now().Unix()
 			commit(false, commitInterruptNewHead)
 
 		case head := <-w.chainHeadCh:
 			clearPending(head.Block.NumberU64())
+			log.Debug("chainHeadCh get", "number", w.chain.CurrentBlock().NumberU64())
 			timestamp = time.Now().Unix()
 			commit(false, commitInterruptNewHead)
 
@@ -377,6 +380,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					timer.Reset(recommit)
 					continue
 				}
+				log.Debug("timer.C get", "number", w.chain.CurrentBlock().NumberU64())
 				commit(true, commitInterruptResubmit)
 			}
 
@@ -427,6 +431,7 @@ func (w *worker) mainLoop() {
 			if h, ok := w.engine.(consensus.Handler); ok {
 				h.NewChainHead()
 			}
+			log.Debug("newWorkCh", "number", w.chain.CurrentBlock().Number()+1)
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
 
 		case ev := <-w.chainSideCh:
