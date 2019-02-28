@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -35,7 +36,7 @@ type (
 	// CanTransferFunc is the signature of a transfer guard function
 	CanTransferFunc func(StateDB, common.Address, *big.Int) bool
 	// TransferFunc is the signature of a transfer function
-	TransferFunc func(StateDB, common.Address, common.Address, *big.Int)
+	TransferFunc func(StateDB, common.Address, common.Address, *big.Int, *big.Int)
 	// GetHashFunc returns the nth block hash in the blockchain
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
@@ -220,7 +221,10 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
-	evm.Transfer(evm.StateDB, caller.Address(), to.Address(), value)
+	gas, err = evm.Transfer1(evm.StateDB, caller.Address(), to.Address(), value)
+	if err != nil {
+		return nil, gas, err
+	}
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 	contract := NewContract(caller, to, value, gas)
@@ -397,7 +401,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.ChainConfig().IsEIP158(evm.BlockNumber) {
 		evm.StateDB.SetNonce(address, 1)
 	}
-	evm.Transfer(evm.StateDB, caller.Address(), address, value)
+	evm.Transfer1(evm.StateDB, caller.Address(), address, value)
 
 	// initialise a new contract and set the code that is to be used by the
 	// EVM. The contract is a scoped environment for this execution context
@@ -465,6 +469,26 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 	codeAndHash := &codeAndHash{code: code}
 	contractAddr = crypto.CreateAddress2(caller.Address(), common.BigToHash(salt), codeAndHash.Hash().Bytes())
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
+}
+
+func (evm *EVM) Transfer1(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
+	// Read the tobin tax amount from the reserve smart contract
+	functionSignature := []byte("0x18ff9d23")
+	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
+
+	numerator := new(big.Int)
+	numerator.SetBytes(ret[0:32])
+	denominator := new(big.Int)
+	denominator.SetBytes(ret[32:64])
+
+	// tobinTax := new(big.Int).Div(big.NewInt(10), big.NewInt(100))
+	tobinTax := new(big.Int).Div(numerator, denominator)
+	fmt.Println(tobinTax)
+
+	// Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
+	// Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
+
+	return gas, err
 }
 
 // ChainConfig returns the environment's chain configuration
