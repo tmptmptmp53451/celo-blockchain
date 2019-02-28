@@ -431,7 +431,7 @@ func (w *worker) mainLoop() {
 			if h, ok := w.engine.(consensus.Handler); ok {
 				h.NewChainHead()
 			}
-			log.Debug("newWorkCh", "number", w.chain.CurrentBlock().Number()+1)
+			log.Debug("newWorkCh", "number", w.chain.CurrentBlock().Number())
 			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
 
 		case ev := <-w.chainSideCh:
