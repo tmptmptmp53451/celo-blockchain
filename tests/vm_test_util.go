@@ -129,7 +129,7 @@ func (t *VMTest) newEVM(statedb *state.StateDB, vmconfig vm.Config) *vm.EVM {
 		}
 		return core.CanTransfer(db, address, amount)
 	}
-	transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {}
+	transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int, amount2 *big.Int) {}
 	context := vm.Context{
 		CanTransfer: canTransfer,
 		Transfer:    transfer,
