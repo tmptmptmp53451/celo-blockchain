@@ -943,20 +943,23 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	commitUncles(w.localUncles)
 	commitUncles(w.remoteUncles)
 
-	if !noempty {
-		// Create an empty block based on temporary copied state for sealing in advance without waiting block
-		// execution finished.
-		w.commit(uncles, nil, false, tstart)
-	}
-
 	// Fill the block with all available pending transactions.
 	pending, err := w.eth.TxPool().Pending()
+	log.Debug("commitNewWork pending", "pending", len(pending))
 	if err != nil {
 		log.Error("Failed to fetch pending transactions", "err", err)
 		return
 	}
 	// Short circuit if there is no available pending transactions
+
 	if len(pending) == 0 {
+
+		if !noempty {
+			// Create an empty block based on temporary copied state for sealing in advance without waiting block
+			// execution finished.
+			w.commit(uncles, nil, false, tstart)
+		}
+
 		w.updateSnapshot()
 		return
 	}
@@ -1014,7 +1017,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 			log.Info("Commit new mining work", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
 				"uncles", len(uncles), "txs", w.current.tcount, "gas", block.GasUsed(), "fees", feesEth, "elapsed", common.PrettyDuration(time.Since(start)))
 
-			// TODO(Tim) -- this is the wrong place. Verification messages will get sent before this block is actually signed (and it may never be) 
+			// TODO(Tim) -- this is the wrong place. Verification messages will get sent before this block is actually signed (and it may never be)
 			abe.SendVerificationMessages(w.current.receipts, block, w.coinbase, w.eth.AccountManager(), w.verificationService, w.verificationRewards)
 
 		case <-w.exitCh:
