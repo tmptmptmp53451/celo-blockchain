@@ -495,6 +495,7 @@ func (w *worker) mainLoop() {
 			} else {
 				// If we're mining, but nothing is being processed, wake on new transactions
 				if w.config.Clique != nil && w.config.Clique.Period == 0 {
+					log.Debug("committingNewWork as Clipque")
 					w.commitNewWork(nil, false, time.Now().Unix())
 				}
 			}
