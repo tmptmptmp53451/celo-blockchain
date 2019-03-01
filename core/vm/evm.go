@@ -482,14 +482,12 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		numerator.SetBytes(ret[0:32])
 		denominator := new(big.Int)
 		denominator.SetBytes(ret[32:64])
-	} else {
-		return gas, err
+
+		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
+
+		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
+		evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
 	}
-
-	tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
-
-	evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
-	evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
 
 	return gas, err
 }
