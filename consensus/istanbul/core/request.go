@@ -34,6 +34,7 @@ func (c *core) handleRequest(request *istanbul.Request) error {
 
 	c.current.pendingRequest = request
 	if c.state == StateAcceptRequest {
+		logger.Debug("request.go/sendPrepare", "number", request.Proposal.Number())
 		c.sendPreprepare(request)
 	}
 	return nil
