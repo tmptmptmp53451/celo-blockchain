@@ -18,6 +18,7 @@ package vm
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -477,16 +478,24 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	functionSignature := []byte("0x18ff9d23")
 	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 
+	fmt.Println("tobin tax original: ", ret)
+
 	if binary.Size(ret) == 64 {
+		fmt.Println("tobin tax size == 64")
 		numerator := new(big.Int)
 		numerator.SetBytes(ret[0:32])
+		fmt.Println("numerator: ", numerator)
 		denominator := new(big.Int)
 		denominator.SetBytes(ret[32:64])
+		fmt.Println("denominator: ", denominator)
 
 		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
+		fmt.Println("tobin tax final: ", tobinTax)
 
 		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
+		fmt.Println("transfer 1")
 		evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
+		fmt.Println("transfer 2")
 	}
 
 	return gas, err
