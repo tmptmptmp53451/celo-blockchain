@@ -18,15 +18,14 @@ package vm
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -223,6 +222,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
+	log.Debug("Calling TobinTransfer in Call")
 	gas, err = evm.TobinTransfer(evm.StateDB, caller.Address(), to.Address(), value)
 	if err != nil {
 		return nil, gas, err
@@ -403,6 +403,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.ChainConfig().IsEIP158(evm.BlockNumber) {
 		evm.StateDB.SetNonce(address, 1)
 	}
+	log.Debug("Calling TobinTransfer in create")
 	evm.TobinTransfer(evm.StateDB, caller.Address(), address, value)
 
 	// initialise a new contract and set the code that is to be used by the
@@ -475,27 +476,28 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 
 func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
 	// Read the tobin tax amount from the reserve smart contract
+	log.Debug("getting tobin tax...")
 	functionSignature := []byte("0x18ff9d23")
 	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 
-	fmt.Println("tobin tax original: ", ret)
+	log.Debug("tobin tax original: ", ret)
 
 	if binary.Size(ret) == 64 {
-		fmt.Println("tobin tax size == 64")
+		log.Debug("tobin tax size == 64")
 		numerator := new(big.Int)
 		numerator.SetBytes(ret[0:32])
-		fmt.Println("numerator: ", numerator)
+		log.Debug("numerator: ", numerator)
 		denominator := new(big.Int)
 		denominator.SetBytes(ret[32:64])
-		fmt.Println("denominator: ", denominator)
+		log.Debug("denominator: ", denominator)
 
 		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
-		fmt.Println("tobin tax final: ", tobinTax)
+		log.Debug("tobin tax final: ", tobinTax)
 
 		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
-		fmt.Println("transfer 1")
+		log.Debug("transfer 1")
 		evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
-		fmt.Println("transfer 2")
+		log.Debug("transfer 2")
 	}
 
 	return gas, err
