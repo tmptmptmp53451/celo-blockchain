@@ -122,10 +122,10 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int, amount2 *big.Int) {
-	log.Debug("call transfer in core")
-	log.Debug("subtract amount from sender")
+	log.Debug("transfer: call transfer in core")
+	log.Debug("transfer: subtract amount from sender")
 	db.SubBalance(sender, amount)
-	log.Debug("add amount to recipient")
+	log.Debug("transfer: add amount to recipient")
 	db.AddBalance(recipient, amount)
-	log.Debug("done with transfer")
+	log.Debug("transfer: done with transfer")
 }

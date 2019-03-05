@@ -48,7 +48,9 @@ type (
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, error) {
+	log.Debug("run")
 	if contract.CodeAddr != nil {
+		log.Debug("run precompiled contract")
 		precompiles := PrecompiledContractsHomestead
 		if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
 			precompiles = PrecompiledContractsByzantium
@@ -58,6 +60,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 		}
 	}
 	for _, interpreter := range evm.interpreters {
+		log.Debug("run byte code interpreter")
 		if interpreter.CanRun(contract.Code) {
 			if evm.interpreter != interpreter {
 				// Ensure that the interpreter pointer is set back
@@ -191,15 +194,18 @@ func (evm *EVM) Interpreter() Interpreter {
 // execution error or failed value transfer.
 func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
+		log.Debug("Call nil")
 		return nil, gas, nil
 	}
 
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		log.Debug("Call can't execute above the call depth limit")
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
+		log.Debug("Call can't transfer")
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -208,6 +214,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		snapshot = evm.StateDB.Snapshot()
 	)
 	if !evm.StateDB.Exist(addr) {
+		log.Debug("Call no StateDB for this address")
 		precompiles := PrecompiledContractsHomestead
 		if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
 			precompiles = PrecompiledContractsByzantium
@@ -220,16 +227,20 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			}
 			return nil, gas, nil
 		}
+		log.Debug("Call create StateDB for address")
 		evm.StateDB.CreateAccount(addr)
 	}
 	log.Debug("Calling TobinTransfer in Call")
 	gas, err = evm.TobinTransfer(evm.StateDB, caller.Address(), to.Address(), value)
 	if err != nil {
+		log.Debug("Call error", "err", err)
 		return nil, gas, err
 	}
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
+	log.Debug("Call initialize new contract")
 	contract := NewContract(caller, to, value, gas)
+	log.Debug("Call SetCallCode")
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
 	// Even if the account has no code, we need to continue because it might be a precompile
@@ -243,12 +254,14 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 			evm.vmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 		}()
 	}
+	log.Debug("Call run")
 	ret, err = run(evm, contract, input, false)
 
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
 	if err != nil {
+		log.Debug("Call error", "err", err)
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
 			contract.UseGas(contract.Gas)
@@ -266,15 +279,18 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 // code with the caller as context.
 func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
+		log.Debug("CallCode nil")
 		return nil, gas, nil
 	}
 
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
+		log.Debug("CallCode can't execute above call depth limit")
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
 	if !evm.CanTransfer(evm.StateDB, caller.Address(), value) {
+		log.Debug("CallCode can't transfer")
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -285,11 +301,15 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 	// initialise a new contract and set the code that is to be used by the
 	// EVM. The contract is a scoped environment for this execution context
 	// only.
+	log.Debug("CallCode initialize new contract")
 	contract := NewContract(caller, to, value, gas)
+	log.Debug("CallCode set call code")
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
 
+	log.Debug("CallCode run")
 	ret, err = run(evm, contract, input, false)
 	if err != nil {
+		log.Debug("CallCode error", "err", err)
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
 			contract.UseGas(contract.Gas)
@@ -336,6 +356,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 // Opcodes that attempt to perform such modifications will result in exceptions
 // instead of performing the modifications.
 func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+	log.Debug("StaticCall")
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -352,13 +373,18 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	// EVM. The contract is a scoped environment for this execution context
 	// only.
 	contract := NewContract(caller, to, new(big.Int), gas)
+	log.Debug("StaticCall create new contract")
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
+	log.Debug("StaticCall SetCallCode")
 
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in Homestead this also counts for code storage gas errors.
+	log.Debug("StaticCall run")
 	ret, err = run(evm, contract, input, true)
+	log.Debug("StaticCall run output", "ret", ret)
 	if err != nil {
+		log.Debug("StaticCall error", "err", err)
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
 			contract.UseGas(contract.Gas)
@@ -480,6 +506,8 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	functionSignature := []byte("0x18ff9d23")
 	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 
+	log.Debug("tobin tax gas left", "gas", gas)
+
 	if err == nil {
 		log.Debug("tobin tax original", "ret", ret)
 		log.Debug("tobin tax size", "size", binary.Size(ret))
@@ -491,18 +519,18 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		log.Debug("tobin tax size == 64")
 		numerator := new(big.Int)
 		numerator.SetBytes(ret[0:32])
-		log.Debug("numerator", "num", numerator)
+		log.Debug("tobin tax numerator", "numerator", numerator)
 		denominator := new(big.Int)
 		denominator.SetBytes(ret[32:64])
-		log.Debug("denominator", "denom", denominator)
+		log.Debug("tobin tax denominator", "denominator", denominator)
 
 		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
 		log.Debug("tobin tax final: ", "value", tobinTax)
 
 		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
-		log.Debug("transfer 1")
+		log.Debug("tobin tax: call transfer 1")
 		evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
-		log.Debug("transfer 2")
+		log.Debug("tobin tax: call transfer 2")
 	}
 
 	return gas, err
