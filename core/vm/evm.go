@@ -480,19 +480,23 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	functionSignature := []byte("0x18ff9d23")
 	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 
-	log.Debug("tobin tax original: ", ret)
+	if err != nil {
+		log.Debug("tobin tax original", "ret", ret)
+	} else {
+		log.Debug("tobin tax failed", "err", err)
+	}
 
 	if binary.Size(ret) == 64 {
 		log.Debug("tobin tax size == 64")
 		numerator := new(big.Int)
 		numerator.SetBytes(ret[0:32])
-		log.Debug("numerator: ", numerator)
+		log.Debug("numerator", "num", numerator)
 		denominator := new(big.Int)
 		denominator.SetBytes(ret[32:64])
-		log.Debug("denominator: ", denominator)
+		log.Debug("denominator", "denom", denominator)
 
 		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
-		log.Debug("tobin tax final: ", tobinTax)
+		log.Debug("tobin tax final: ", "value", tobinTax)
 
 		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
 		log.Debug("transfer 1")
