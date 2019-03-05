@@ -168,8 +168,10 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 
 	// Don't bother with the execution if there's no code.
 	if len(contract.Code) == 0 {
+		log.Debug("RUN no contract code, return nil")
 		return nil, nil
 	}
+	log.Debug("RUN contract code", "contract code", contract.Code)
 
 	var (
 		op    OpCode        // current opcode
@@ -186,6 +188,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		logged  bool   // deferred Tracer should ignore already logged steps
 	)
 	contract.Input = input
+	log.Debug("RUN contract input", "contract input", input)
 
 	// Reclaim the stack as an int pool when the execution stops
 	defer func() { in.intPool.put(stack.data...) }()
@@ -206,6 +209,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 	// the execution of one of the operations or until the done flag is set by the
 	// parent context.
 	for atomic.LoadInt32(&in.evm.abort) == 0 {
+		log.Debug("RUN interpreter main loop")
 		if in.cfg.Debug {
 			// Capture pre-execution values for tracing.
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
@@ -215,6 +219,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
 		operation := in.cfg.JumpTable[op]
+		log.Debug("RUN op code", "opcode", op)
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
@@ -256,7 +261,9 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 
 		// execute the operation
+		log.Debug("RUN execute operation")
 		res, err := operation.execute(&pc, in, contract, mem, stack)
+		log.Debug("RUN operation result", "res", res)
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
 		if verifyPool {
@@ -266,6 +273,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// set the last return to the result of the operation.
 		if operation.returns {
 			in.returnData = res
+			log.Debug("RUN operation result 2", "res", res)
 		}
 
 		switch {
