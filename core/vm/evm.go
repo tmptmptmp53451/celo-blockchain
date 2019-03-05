@@ -480,8 +480,9 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	functionSignature := []byte("0x18ff9d23")
 	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 
-	if err != nil {
+	if err == nil {
 		log.Debug("tobin tax original", "ret", ret)
+		log.Debug("tobin tax size"), "size", binary.Size(ret))
 	} else {
 		log.Debug("tobin tax failed", "err", err)
 	}
