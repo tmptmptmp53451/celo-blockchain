@@ -55,6 +55,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 		if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
 			precompiles = PrecompiledContractsByzantium
 		}
+		log.Debug("run precompiles", "precompiles", precompiles[*contract.CodeAddr])
 		if p := precompiles[*contract.CodeAddr]; p != nil {
 			return RunPrecompiledContract(p, input, contract, evm)
 		}
@@ -62,6 +63,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 	for _, interpreter := range evm.interpreters {
 		log.Debug("run byte code interpreter")
 		if interpreter.CanRun(contract.Code) {
+			log.Debug("run byte code interpreter CAN RUN")
 			if evm.interpreter != interpreter {
 				// Ensure that the interpreter pointer is set back
 				// to its current value upon return.
@@ -70,6 +72,7 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 				}(evm.interpreter)
 				evm.interpreter = interpreter
 			}
+			log.Debug("run byte code interpreter RUN")
 			return interpreter.Run(contract, input, readOnly)
 		}
 	}
@@ -256,7 +259,8 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	}
 	log.Debug("Call run")
 	ret, err = run(evm, contract, input, false)
-
+	log.Debug("Call run return", "ret", ret)
+	log.Debug("Call run error", "err", err)
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
@@ -383,6 +387,7 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 	log.Debug("StaticCall run")
 	ret, err = run(evm, contract, input, true)
 	log.Debug("StaticCall run output", "ret", ret)
+	log.Debug("StaticCall run error", "err", err)
 	if err != nil {
 		log.Debug("StaticCall error", "err", err)
 		evm.StateDB.RevertToSnapshot(snapshot)

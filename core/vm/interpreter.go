@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -141,6 +142,7 @@ func (in *EVMInterpreter) enforceRestrictions(op OpCode, operation operation, st
 // considered a revert-and-consume-all-gas operation except for
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	log.Debug("RUN interpreter evaluate contract's code")
 	if in.intPool == nil {
 		in.intPool = poolOfIntPools.get()
 		defer func() {

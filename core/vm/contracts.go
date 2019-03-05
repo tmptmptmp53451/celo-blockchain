@@ -90,6 +90,7 @@ func (c *ecrecover) RequiredGas(input []byte) uint64 {
 }
 
 func (c *ecrecover) Run(input []byte, caller common.Address, evm *EVM) ([]byte, error) {
+	log.Debug("Run run precompiled contract")
 	const ecRecoverInputLength = 128
 
 	input = common.RightPadBytes(input, ecRecoverInputLength)
