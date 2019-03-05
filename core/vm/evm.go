@@ -482,7 +482,7 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 
 	if err == nil {
 		log.Debug("tobin tax original", "ret", ret)
-		log.Debug("tobin tax size"), "size", binary.Size(ret))
+		log.Debug("tobin tax size", "size", binary.Size(ret))
 	} else {
 		log.Debug("tobin tax failed", "err", err)
 	}
