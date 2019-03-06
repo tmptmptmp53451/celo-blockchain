@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
@@ -277,7 +278,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 
 		if binary.Size(res) > 0 {
-			log.Debug("RUN execute operation result", "result", string(res))
+			log.Debug("RUN execute operation result", "result", hexutil.Encode(res))
 		}
 
 		switch {

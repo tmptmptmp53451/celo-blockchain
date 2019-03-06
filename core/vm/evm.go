@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
@@ -522,9 +523,9 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		log.Debug("tobin tax size", "size", binary.Size(ret))
 	}
 
-	if binary.Size(res) > 0 {
-		log.Debug("tobin tax result decoded", "result", string(ret))
-	}
+	// if binary.Size(res) > 0 {
+	log.Debug("tobin tax result decoded", "result", hexutil.Encode(ret))
+	// }
 
 	if binary.Size(ret) == 64 {
 		log.Debug("tobin tax size == 64")
