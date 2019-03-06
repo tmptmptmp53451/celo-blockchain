@@ -510,8 +510,9 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	// Read the tobin tax amount from the reserve smart contract
 	log.Debug("getting tobin tax...")
 	functionSignature := []byte("0x18ff9d23")
-	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
-
+	// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
+	ret, gas, err := evm.CallCode(
+		AccountRef(common.HexToAddress("0000000000000000000000000000000000000000")), params.ReserveAddress, functionSignature, uint64(8000000), big.NewInt(0))
 	log.Debug("tobin tax gas left", "gas", gas)
 
 	if err == nil {
@@ -523,9 +524,9 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		log.Debug("tobin tax size", "size", binary.Size(ret))
 	}
 
-	// if binary.Size(res) > 0 {
-	log.Debug("tobin tax result decoded", "result", hexutil.Encode(ret))
-	// }
+	if binary.Size(ret) > 0 {
+		log.Debug("tobin tax result decoded", "result", hexutil.Encode(ret))
+	}
 
 	if binary.Size(ret) == 64 {
 		log.Debug("tobin tax size == 64")
