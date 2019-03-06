@@ -17,8 +17,11 @@
 package vm
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"hash"
+	"reflect"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -219,7 +222,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
 		operation := in.cfg.JumpTable[op]
-		log.Debug("RUN op code", "opcode", op)
+		// log.Debug("RUN op code", "opcode", op)
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
@@ -263,7 +266,19 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// execute the operation
 		log.Debug("RUN execute operation")
 		res, err := operation.execute(&pc, in, contract, mem, stack)
-		log.Debug("RUN operation result", "res", res)
+		if binary.Size(res) > 0 {
+			log.Debug("RUN operation result", "res", res)
+			src := res
+			dst := make([]byte, hex.DecodedLen(len(src)))
+			n, err := hex.Decode(dst, src)
+			if err != nil {
+				log.Debug("RUN operation result decode error", "err", err)
+			}
+
+			log.Debug("RUN operation result dst[:n]", "res", dst[:n])
+			log.Debug("RUN operation result type", "type", reflect.TypeOf(src))
+		}
+
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
 		if verifyPool {
