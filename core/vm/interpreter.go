@@ -18,10 +18,8 @@ package vm
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"hash"
-	"reflect"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -266,18 +264,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// execute the operation
 		log.Debug("RUN execute operation")
 		res, err := operation.execute(&pc, in, contract, mem, stack)
-		if binary.Size(res) > 0 {
-			log.Debug("RUN operation result", "res", res)
-			src := res
-			dst := make([]byte, hex.DecodedLen(len(src)))
-			n, err := hex.Decode(dst, src)
-			if err != nil {
-				log.Debug("RUN operation result decode error", "err", err)
-			}
-
-			log.Debug("RUN operation result dst[:n]", "res", dst[:n])
-			log.Debug("RUN operation result type", "type", reflect.TypeOf(src))
-		}
 
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
@@ -288,7 +274,10 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// set the last return to the result of the operation.
 		if operation.returns {
 			in.returnData = res
-			log.Debug("RUN operation result 2", "res", res)
+		}
+
+		if binary.Size(res) > 0 {
+			log.Debug("RUN execute operation result", "result", string(res))
 		}
 
 		switch {
