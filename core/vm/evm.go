@@ -500,40 +500,6 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
 }
 
-func getDebitFromMethod() string {
-	// method is "debitFrom(address from, uint256 value)"
-	// selector is first 4 bytes of keccak256 of "debitFrom(address,uint256)"
-	// Source:
-	// pip3 install pyethereum
-	// python3 -c 'from ethereum.utils import sha3; print(sha3("debitFrom(address,uint256)")[0:4].hex())'
-	return "362a5f80"
-}
-
-func getCreditToMethod() string {
-	// method is "creditTo(address from, uint256 value)"
-	// selector is first 4 bytes of keccak256 of "creditTo(address,uint256)"
-	// Source:
-	// pip3 install pyethereum
-	// python3 -c 'from ethereum.utils import sha3; print(sha3("creditTo(address,uint256)")[0:4].hex())'
-	return "18ff9d23"
-}
-
-func getTokenDebitFromContractData() []byte {
-	methodSelector := getDebitFromMethod()
-	return getEncodedAbi(methodSelector, addressToAbi)
-}
-
-func getTokenCreditToContractData() []byte {
-	methodSelector := getCreditToMethod()
-	return getEncodedAbi(methodSelector)
-}
-
-func getEncodedAbi(methodSelector string) []byte {
-	encodedAbi := make([]byte, len(methodSelector))
-	copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
-	return encodedAbi
-}
-
 // Tobin Transfer performs a transfer that takes a tax from the sent amount
 func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
 	// Read the tobin tax amount from the reserve smart contract
