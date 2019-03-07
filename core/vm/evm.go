@@ -506,13 +506,15 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
 }
 
+// Tobin Transfer performs a transfer that takes a tax from the sent amount
 func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
 	// Read the tobin tax amount from the reserve smart contract
 	log.Debug("getting tobin tax...")
-	functionSignature := []byte("0x18ff9d23")
-	// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
-	ret, gas, err := evm.CallCode(
-		AccountRef(common.HexToAddress("0000000000000000000000000000000000000000")), params.ReserveAddress, functionSignature, uint64(8000000), big.NewInt(0))
+	// functionSignature := []byte("0x18ff9d23")
+	functionSignature := []byte("18ff9d23")
+	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
+	// ret, gas, err := evm.CallCode(
+	// AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000), big.NewInt(0))
 	log.Debug("tobin tax gas left", "gas", gas)
 
 	if err == nil {
