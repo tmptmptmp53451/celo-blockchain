@@ -49,22 +49,17 @@ type (
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, error) {
-	log.Debug("run")
 	if contract.CodeAddr != nil {
-		log.Debug("run precompiled contract")
 		precompiles := PrecompiledContractsHomestead
 		if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
 			precompiles = PrecompiledContractsByzantium
 		}
-		log.Debug("run precompiles", "precompiles", precompiles[*contract.CodeAddr])
 		if p := precompiles[*contract.CodeAddr]; p != nil {
 			return RunPrecompiledContract(p, input, contract, evm)
 		}
 	}
 	for _, interpreter := range evm.interpreters {
-		log.Debug("run byte code interpreter")
 		if interpreter.CanRun(contract.Code) {
-			log.Debug("run byte code interpreter CAN RUN")
 			if evm.interpreter != interpreter {
 				// Ensure that the interpreter pointer is set back
 				// to its current value upon return.
@@ -73,7 +68,6 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 				}(evm.interpreter)
 				evm.interpreter = interpreter
 			}
-			log.Debug("run byte code interpreter RUN")
 			return interpreter.Run(contract, input, readOnly)
 		}
 	}
@@ -511,8 +505,13 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	// Read the tobin tax amount from the reserve smart contract
 	log.Debug("getting tobin tax...")
 	// functionSignature := []byte("0x18ff9d23")
-	functionSignature := []byte("18ff9d23")
-	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
+	// functionSignature := []byte("18ff9d23")
+	methodSelector := "18ff9d23"
+	encodedAbi := make([]byte, len(methodSelector))
+	copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
+	log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
+	ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
+	// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 	// ret, gas, err := evm.CallCode(
 	// AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000), big.NewInt(0))
 	log.Debug("tobin tax gas left", "gas", gas)

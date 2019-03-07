@@ -17,13 +17,11 @@
 package vm
 
 import (
-	"encoding/binary"
 	"fmt"
 	"hash"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
@@ -144,7 +142,6 @@ func (in *EVMInterpreter) enforceRestrictions(op OpCode, operation operation, st
 // considered a revert-and-consume-all-gas operation except for
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
-	log.Debug("RUN interpreter evaluate contract's code")
 	if in.intPool == nil {
 		in.intPool = poolOfIntPools.get()
 		defer func() {
@@ -211,7 +208,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 	// the execution of one of the operations or until the done flag is set by the
 	// parent context.
 	for atomic.LoadInt32(&in.evm.abort) == 0 {
-		log.Debug("RUN interpreter main loop")
 		if in.cfg.Debug {
 			// Capture pre-execution values for tracing.
 			logged, pcCopy, gasCopy = false, pc, contract.Gas
@@ -263,7 +259,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		}
 
 		// execute the operation
-		log.Debug("RUN execute operation")
 		res, err := operation.execute(&pc, in, contract, mem, stack)
 
 		// verifyPool is a build flag. Pool verification makes sure the integrity
@@ -275,10 +270,6 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// set the last return to the result of the operation.
 		if operation.returns {
 			in.returnData = res
-		}
-
-		if binary.Size(res) > 0 {
-			log.Debug("RUN execute operation result", "result", hexutil.Encode(res))
 		}
 
 		switch {
