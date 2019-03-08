@@ -507,7 +507,7 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 	// functionSignature := []byte("0x18ff9d23")
 	// functionSignature := []byte("18ff9d23")
 	methodSelector := "18ff9d23"
-	zeros := "0000000000000000000000000000000000000000000000000000000000000000"
+	zeros := "00000000000000000000000000000000"
 	encodedAbi := make([]byte, len(methodSelector), len(zeros))
 	copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
 	copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
