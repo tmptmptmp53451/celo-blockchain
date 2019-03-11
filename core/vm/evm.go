@@ -228,7 +228,9 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		log.Debug("Call create StateDB for address")
 		evm.StateDB.CreateAccount(addr)
 	}
+
 	log.Debug("Calling TobinTransfer in Call")
+	log.Debug("Call value", "value", value)
 	gas, err = evm.TobinTransfer(evm.StateDB, caller.Address(), to.Address(), value)
 	if err != nil {
 		log.Debug("Call error", "err", err)
@@ -502,7 +504,7 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 
 // Tobin Transfer performs a transfer that takes a tax from the sent amount
 func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
-	if amount != big.NewInt(0) {
+	if amount.Cmp(big.NewInt(0)) != 0 {
 		// Read the tobin tax amount from the reserve smart contract
 		log.Debug("getting tobin tax...")
 		// functionSignature := []byte("0x18ff9d23")
