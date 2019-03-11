@@ -502,56 +502,58 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 
 // Tobin Transfer performs a transfer that takes a tax from the sent amount
 func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
-	// Read the tobin tax amount from the reserve smart contract
-	log.Debug("getting tobin tax...")
-	// functionSignature := []byte("0x18ff9d23")
-	// functionSignature := []byte("18ff9d23")
-	methodSelector := "18ff9d23"
-	// zeros := "00000000000000000000000000000000"
-	// encodedAbi := make([]byte, len(methodSelector), len(zeros))
-	encodedAbi := make([]byte, len(methodSelector))
-	copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
-	// copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
-	// encodedAbi := getTokenCreditToContractData()
-	log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
-	ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
-	// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
-	// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
-	// ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
-	log.Debug("tobin tax gas left", "gas", gas)
+	if amount != big.NewInt(0) {
+		// Read the tobin tax amount from the reserve smart contract
+		log.Debug("getting tobin tax...")
+		// functionSignature := []byte("0x18ff9d23")
+		// functionSignature := []byte("18ff9d23")
+		methodSelector := "18ff9d23"
+		// zeros := "00000000000000000000000000000000"
+		// encodedAbi := make([]byte, len(methodSelector), len(zeros))
+		encodedAbi := make([]byte, len(methodSelector))
+		copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
+		// copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
+		// encodedAbi := getTokenCreditToContractData()
+		log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
+		ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
+		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
+		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
+		// ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
+		log.Debug("tobin tax gas left", "gas", gas)
 
-	if err == nil {
-		log.Debug("tobin tax byte array", "ret", ret)
-		log.Debug("tobin tax size", "size", binary.Size(ret))
-	} else {
-		log.Debug("tobin tax failed", "err", err)
-		log.Debug("tobin tax byte array", "ret", ret)
-		log.Debug("tobin tax size", "size", binary.Size(ret))
+		if err == nil {
+			log.Debug("tobin tax byte array", "ret", ret)
+			log.Debug("tobin tax size", "size", binary.Size(ret))
+		} else {
+			log.Debug("tobin tax failed", "err", err)
+			log.Debug("tobin tax byte array", "ret", ret)
+			log.Debug("tobin tax size", "size", binary.Size(ret))
+		}
+
+		if binary.Size(ret) > 0 {
+			log.Debug("tobin tax result decoded", "result", hexutil.Encode(ret))
+		}
+
+		if binary.Size(ret) == 64 {
+			log.Debug("tobin tax size == 64")
+			numerator := new(big.Int)
+			numerator.SetBytes(ret[0:32])
+			log.Debug("tobin tax numerator", "numerator", numerator)
+			denominator := new(big.Int)
+			denominator.SetBytes(ret[32:64])
+			log.Debug("tobin tax denominator", "denominator", denominator)
+
+			tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
+			log.Debug("tobin tax final: ", "value", tobinTax)
+
+			evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
+			log.Debug("tobin tax: call transfer 1")
+			evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
+			log.Debug("tobin tax: call transfer 2")
+		}
+		return gas, err
 	}
-
-	if binary.Size(ret) > 0 {
-		log.Debug("tobin tax result decoded", "result", hexutil.Encode(ret))
-	}
-
-	if binary.Size(ret) == 64 {
-		log.Debug("tobin tax size == 64")
-		numerator := new(big.Int)
-		numerator.SetBytes(ret[0:32])
-		log.Debug("tobin tax numerator", "numerator", numerator)
-		denominator := new(big.Int)
-		denominator.SetBytes(ret[32:64])
-		log.Debug("tobin tax denominator", "denominator", denominator)
-
-		tobinTax := new(big.Int).Div(new(big.Int).Mul(numerator, amount), denominator)
-		log.Debug("tobin tax final: ", "value", tobinTax)
-
-		evm.Context.Transfer(db, sender, recipient, new(big.Int).Sub(amount, tobinTax), big.NewInt(1))
-		log.Debug("tobin tax: call transfer 1")
-		evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
-		log.Debug("tobin tax: call transfer 2")
-	}
-
-	return gas, err
+	return uint64(8000000), nil
 }
 
 // ChainConfig returns the environment's chain configuration
