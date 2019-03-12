@@ -43,4 +43,6 @@ var (
 	errFailedDecodeCommit = errors.New("failed to decode COMMIT")
 	// errFailedDecodeMessageSet is returned when the message set is malformed.
 	errFailedDecodeMessageSet = errors.New("failed to decode message set")
+	// errInvalidCommitSeal is returned when the signer of the COMMIT seal is not the sender of the message.
+	errInvalidCommitSeal = errors.New("invalid commit seal")
 )

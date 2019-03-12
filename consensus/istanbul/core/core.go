@@ -171,7 +171,7 @@ func (c *core) commit() {
 		}
 
 		if err := c.backend.Commit(proposal, committedSeals); err != nil {
-			c.current.UnlockHash() //Unlock block when insertion fails
+			c.current.UnlockHash() // Unlock block when insertion fails
 			c.sendNextRoundChange()
 			return
 		}

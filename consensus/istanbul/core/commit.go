@@ -66,6 +66,10 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
+	if err := c.verifySeal(msg.CommittedSeal, commit.Digest, src); err != nil {
+		return err
+	}
+
 	c.acceptCommit(msg, src)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
@@ -91,6 +95,24 @@ func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) er
 		return errInconsistentSubject
 	}
 
+	return nil
+}
+
+// verifySeal verifies if the Commit seal was signed by the sender of the received COMMIT message.
+func (c *core) verifySeal(seal []byte, digest common.Hash, src istanbul.Validator) error {
+	logger := c.logger.New("from", src, "state", c.state)
+
+	proposalSeal := PrepareCommittedSeal(digest)
+	addr, err := istanbul.GetSignatureAddress(proposalSeal, seal)
+	// TODO(asa): Fix logging
+	if err != nil {
+		logger.Error("unable to get address from commit seal", "err", err)
+		return errInvalidCommitSeal
+	}
+	if addr != src.Address() {
+		logger.Error("signer of commit seal does not match commit message sender", "err", err)
+		return errInvalidCommitSeal
+	}
 	return nil
 }
 
