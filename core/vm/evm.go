@@ -517,7 +517,7 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		// copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
 		// encodedAbi := getTokenCreditToContractData()
 		log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
-		ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
+		ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 		// ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
