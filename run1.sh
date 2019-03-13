@@ -1,0 +1,2 @@
+#!/bin/bash
+make all && rm -rf datadir/geth && ./build/bin/geth init genesis.json --datadir datadir && echo password | ./build/bin/geth --nodiscover --datadir datadir --unlock 0x99d0747412109de2cf530e71a427e6f22ab881b2 --etherbase 0x99d0747412109de2cf530e71a427e6f22ab881b2 --networkid 1101  --rpc --rpcapi 'debug,eth,web3,net,admin,personal,miner,accounts' --rpcport 8545 --port 30303 --verbosity 4 --nodiscover --mine --rpcvhosts=* --miner.verificationrewards 0x99d0747412109de2cf530e71a427e6f22ab881b2 --miner.verificationpool 'https://mining-pool.celo.org/v0.1/sms'

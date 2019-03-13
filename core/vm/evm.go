@@ -231,7 +231,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 
 	log.Debug("Calling TobinTransfer in Call")
 	log.Debug("Call value", "value", value)
-	gas, err = evm.TobinTransfer(evm.StateDB, caller.Address(), to.Address(), value)
+	gas, err = evm.TobinTransfer(evm.StateDB, caller.Address(), to.Address(), gas, value)
 	if err != nil {
 		log.Debug("Call error", "err", err)
 		return nil, gas, err
@@ -432,7 +432,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		evm.StateDB.SetNonce(address, 1)
 	}
 	log.Debug("Calling TobinTransfer in create")
-	evm.TobinTransfer(evm.StateDB, caller.Address(), address, value)
+	evm.TobinTransfer(evm.StateDB, caller.Address(), address, gas, value)
 
 	// initialise a new contract and set the code that is to be used by the
 	// EVM. The contract is a scoped environment for this execution context
@@ -503,21 +503,24 @@ func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *
 }
 
 // Tobin Transfer performs a transfer that takes a tax from the sent amount
-func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amount *big.Int) (leftOverGas uint64, err error) {
+func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, gas uint64, amount *big.Int) (leftOverGas uint64, err error) {
 	if amount.Cmp(big.NewInt(0)) != 0 {
 		// Read the tobin tax amount from the reserve smart contract
 		log.Debug("getting tobin tax...")
 		// functionSignature := []byte("0x18ff9d23")
 		// functionSignature := []byte("18ff9d23")
-		methodSelector := "18ff9d23"
+		//methodSelector := "18ff9d23"
 		// zeros := "00000000000000000000000000000000"
 		// encodedAbi := make([]byte, len(methodSelector), len(zeros))
-		encodedAbi := make([]byte, len(methodSelector))
-		copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
+		encodedAbi, err := hexutil.Decode("0x18ff9d23")
+		if err != nil {
+			return gas, err
+		}
+		//copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
 		// copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
 		// encodedAbi := getTokenCreditToContractData()
 		log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
-		ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
+		ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0123456")), params.ReserveAddress, encodedAbi, gas, big.NewInt(0))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 		// ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
@@ -555,7 +558,7 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, amou
 		}
 		return gas, err
 	}
-	return uint64(8000000), nil
+	return gas, nil
 }
 
 // ChainConfig returns the environment's chain configuration

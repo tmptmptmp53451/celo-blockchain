@@ -142,6 +142,7 @@ func (in *EVMInterpreter) enforceRestrictions(op OpCode, operation operation, st
 // considered a revert-and-consume-all-gas operation except for
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+	log.Debug("RUN contract code address", "code address", contract.CodeAddr)
 	if in.intPool == nil {
 		in.intPool = poolOfIntPools.get()
 		defer func() {

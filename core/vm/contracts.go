@@ -437,6 +437,6 @@ func (c *transfer) Run(input []byte, caller common.Address, evm *EVM) ([]byte, e
 	if !evm.Context.CanTransfer(evm.StateDB, from, value) {
 		return nil, ErrInsufficientBalance
 	}
-	evm.TobinTransfer(evm.StateDB, from, to, value)
+	evm.TobinTransfer(evm.StateDB, from, to, c.RequiredGas(input), value)
 	return input, nil
 }
