@@ -75,7 +75,8 @@ const (
 )
 
 type message struct {
-	Code          uint64
+	Code uint64
+	// Holds information like the Subject
 	Msg           []byte
 	Address       common.Address
 	Signature     []byte
