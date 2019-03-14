@@ -22,13 +22,11 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
+	"github.com/ethereum/go-ethereum/log"
 	gethmetrics "github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/metrics/influxdb"
 	swarmmetrics "github.com/ethereum/go-ethereum/swarm/metrics"
 	"github.com/ethereum/go-ethereum/swarm/tracing"
-
-	"github.com/ethereum/go-ethereum/log"
-
 	cli "gopkg.in/urfave/cli.v1"
 )
 

@@ -47,7 +47,6 @@ import (
 	mockrpc "github.com/ethereum/go-ethereum/swarm/storage/mock/rpc"
 	"github.com/ethereum/go-ethereum/swarm/tracing"
 	sv "github.com/ethereum/go-ethereum/swarm/version"
-
 	cli "gopkg.in/urfave/cli.v1"
 )
 

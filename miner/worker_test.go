@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/clique"
@@ -48,6 +49,10 @@ var (
 	testUserKey, _  = crypto.GenerateKey()
 	testUserAddress = crypto.PubkeyToAddress(testUserKey.PublicKey)
 
+	testVerificationService        = ""
+	testVerificationRewardsKey, _  = crypto.GenerateKey()
+	testVerificationRewardsAddress = crypto.PubkeyToAddress(testVerificationRewardsKey.PublicKey)
+
 	// Test transactions
 	pendingTxs []*types.Transaction
 	newTxs     []*types.Transaction
@@ -70,11 +75,12 @@ func init() {
 
 // testWorkerBackend implements worker.Backend interfaces and wraps all information needed during the testing.
 type testWorkerBackend struct {
-	db         ethdb.Database
-	txPool     *core.TxPool
-	chain      *core.BlockChain
-	testTxFeed event.Feed
-	uncleBlock *types.Block
+	accountManager *accounts.Manager
+	db             ethdb.Database
+	txPool         *core.TxPool
+	chain          *core.BlockChain
+	testTxFeed     event.Feed
+	uncleBlock     *types.Block
 }
 
 func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, n int) *testWorkerBackend {
@@ -88,8 +94,9 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 
 	switch engine.(type) {
 	case *clique.Clique:
-		gspec.ExtraData = make([]byte, 32+common.AddressLength+65)
-		copy(gspec.ExtraData[32:], testBankAddress[:])
+		gspec.ExtraData = make([]byte, 52+common.AddressLength+65)
+		copy(gspec.ExtraData[52:], testBankAddress[:])
+		copy(gspec.ExtraData[52:], testBankAddress[:])
 	case *ethash.Ethash:
 	default:
 		t.Fatalf("unexpected consensus engine type: %T", engine)
@@ -115,17 +122,21 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 	blocks, _ := core.GenerateChain(chainConfig, parent, engine, db, 1, func(i int, gen *core.BlockGen) {
 		gen.SetCoinbase(testUserAddress)
 	})
+	var backends []accounts.Backend
+	accountManager := accounts.NewManager(backends...)
 
 	return &testWorkerBackend{
-		db:         db,
-		chain:      chain,
-		txPool:     txpool,
-		uncleBlock: blocks[0],
+		accountManager: accountManager,
+		db:             db,
+		chain:          chain,
+		txPool:         txpool,
+		uncleBlock:     blocks[0],
 	}
 }
 
-func (b *testWorkerBackend) BlockChain() *core.BlockChain { return b.chain }
-func (b *testWorkerBackend) TxPool() *core.TxPool         { return b.txPool }
+func (b *testWorkerBackend) AccountManager() *accounts.Manager { return b.accountManager }
+func (b *testWorkerBackend) BlockChain() *core.BlockChain      { return b.chain }
+func (b *testWorkerBackend) TxPool() *core.TxPool              { return b.txPool }
 func (b *testWorkerBackend) PostChainEvents(events []interface{}) {
 	b.chain.PostChainEvents(events, nil)
 }
@@ -133,7 +144,7 @@ func (b *testWorkerBackend) PostChainEvents(events []interface{}) {
 func newTestWorker(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, blocks int) (*worker, *testWorkerBackend) {
 	backend := newTestWorkerBackend(t, chainConfig, engine, blocks)
 	backend.txPool.AddLocals(pendingTxs)
-	w := newWorker(chainConfig, engine, backend, new(event.TypeMux), time.Second, params.GenesisGasLimit, params.GenesisGasLimit, nil)
+	w := newWorker(chainConfig, engine, backend, new(event.TypeMux), time.Second, params.GenesisGasLimit, params.GenesisGasLimit, nil, testVerificationService, testVerificationRewardsAddress)
 	w.setEtherbase(testBankAddress)
 	return w, backend
 }

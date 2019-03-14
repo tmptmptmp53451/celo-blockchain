@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // ChainContext supports retrieving headers and consensus parameters from the
@@ -48,6 +49,7 @@ func NewEVMContext(msg Message, header *types.Header, chain ChainContext, author
 		CanTransfer: CanTransfer,
 		Transfer:    Transfer,
 		GetHash:     GetHashFn(header, chain),
+		GetCoinbase: GetCoinbaseFn(header, chain),
 		Origin:      msg.From(),
 		Coinbase:    beneficiary,
 		BlockNumber: new(big.Int).Set(header.Number),
@@ -84,6 +86,34 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 	}
 }
 
+// GetCoinbaseFn returns a GetCoinbaseFunc which retrieves the coinbase by block number
+func GetCoinbaseFn(ref *types.Header, chain ChainContext) func(n uint64) common.Address {
+	var cache map[uint64]common.Address
+
+	return func(n uint64) common.Address {
+		// If there's no address cache yet, make one
+		if cache == nil {
+			cache = map[uint64]common.Address{
+				ref.Number.Uint64(): ref.Coinbase,
+			}
+		}
+		// Try to fulfill the request from the cache
+		if address, ok := cache[n]; ok {
+			return address
+		}
+		// Not cached, iterate the blocks and cache the addresses
+		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
+			cache[header.Number.Uint64()] = header.Coinbase
+			if n == header.Number.Uint64() {
+				return header.Coinbase
+			}
+		}
+
+		// Like GetHashFn we'll just return an empty address if we can't find it
+		return common.Address{}
+	}
+}
+
 // CanTransfer checks whether there are enough funds in the address' account to make a transfer.
 // This does not take the necessary gas in to account to make the transfer valid.
 func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
@@ -92,6 +122,10 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	// TODO(yasmeen): Read the tobin tax amount from the reserve smart contract
+	tobinTax := big.NewInt(0)
+
 	db.SubBalance(sender, amount)
-	db.AddBalance(recipient, amount)
+	db.AddBalance(recipient, new(big.Int).Sub(amount, tobinTax))
+	db.AddBalance(params.ReserveAddress, tobinTax)
 }

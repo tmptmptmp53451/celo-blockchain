@@ -20,10 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/big"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -42,6 +44,17 @@ const (
 	ReceiptStatusSuccessful = uint64(1)
 )
 
+// VerificationRequest represents a request for verification in the Celo ABE protocol.
+type VerificationRequest struct {
+	PhoneHash         common.Hash
+	CodeHash          common.Hash
+	Account           common.Address
+	RequestIndex      *big.Int
+	VerificationIndex *big.Int
+	Verifier          common.Address
+	EncryptedPhone    hexutil.Bytes
+}
+
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields
@@ -50,6 +63,9 @@ type Receipt struct {
 	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log `json:"logs"              gencodec:"required"`
+
+	// Celo fields
+	VerificationRequests []VerificationRequest
 
 	// Implementation fields (don't reorder!)
 	TxHash          common.Hash    `json:"transactionHash" gencodec:"required"`
@@ -91,6 +107,37 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 		r.Status = ReceiptStatusSuccessful
 	}
 	return r
+}
+
+// Decode a VerificationRequest from raw input bytes.
+// Input is expected to be encoded in the following manner:
+// input[0:32]:  bytes32 phoneHash
+// input[32:64]: bytes32 codeHash
+// input[64:96]: address account
+// input[96:128]: bytes32 requestIndex
+// input[128:160]: bytes32 verificationIndex
+// input[160:192]: address verifier
+// input[192:]:    bytes encryptedPhone
+func DecodeVerificationRequest(input []byte) (VerificationRequest, error) {
+	var v VerificationRequest
+	v.PhoneHash = common.BytesToHash(input[0:32])
+	v.Account = common.BytesToAddress(input[64:96])
+	var parsed bool
+	v.RequestIndex, parsed = math.ParseBig256(hexutil.Encode(input[96:128]))
+	if !parsed {
+		return v, fmt.Errorf("Error parsing VerificationRequest: unable to parse RequestIndex from " + hexutil.Encode(input[96:128]))
+	}
+	v.VerificationIndex, parsed = math.ParseBig256(hexutil.Encode(input[128:160]))
+	if !parsed {
+		return v, fmt.Errorf("Error parsing VerificationRequest: unable to parse VerificationIndex from " + hexutil.Encode(input[128:160]))
+	}
+
+	v.CodeHash = common.BytesToHash(input[32:64])
+	v.Verifier = common.BytesToAddress(input[160:192])
+
+	// TODO(asa): Consider validating the length of EncryptedPhone
+	v.EncryptedPhone = input[192:]
+	return v, nil
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt

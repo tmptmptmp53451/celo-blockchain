@@ -168,7 +168,7 @@ var (
 	defaultSyncMode = eth.DefaultConfig.SyncMode
 	SyncModeFlag    = TextMarshalerFlag{
 		Name:  "syncmode",
-		Usage: `Blockchain sync mode ("fast", "full", or "light")`,
+		Usage: `Blockchain sync mode ("fast", "full", "light", or "celolatest")`,
 		Value: &defaultSyncMode,
 	}
 	GCModeFlag = cli.StringFlag{
@@ -394,6 +394,17 @@ var (
 	MinerNoVerfiyFlag = cli.BoolFlag{
 		Name:  "miner.noverify",
 		Usage: "Disable remote sealing verification",
+	}
+	MinerVerificationServiceUrlFlag = cli.StringFlag{
+		Name:  "miner.verificationpool",
+		Usage: "URL to the verification service to be used by the miner to verify users' phone numbers",
+		Value: eth.DefaultConfig.MinerVerificationServiceUrl,
+	}
+	MinerVerificationRewardsFlag = cli.StringFlag{
+		Name:  "miner.verificationrewards",
+		Usage: "Account address to which to send the verification rewards.",
+		// TODO(sklanje): Update this to Celo verification pool address.
+		Value: "0xfeE1a22F43BeeCB912B5a4912ba87527682ef0fC",
 	}
 	// Account settings
 	UnlockedAccountFlag = cli.StringFlag{
@@ -900,6 +911,24 @@ func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *eth.Config) {
 	}
 }
 
+// setVerificationRewards retrieves the verificationrewards either from the directly specified
+// command line flags or from the keystore if CLI indexed.
+func setVerificationRewards(ctx *cli.Context, ks *keystore.KeyStore, cfg *eth.Config) {
+	// Extract the current verificationrewards
+	var verificationrewards string
+	if ctx.GlobalIsSet(MinerVerificationRewardsFlag.Name) {
+		verificationrewards = ctx.GlobalString(MinerVerificationRewardsFlag.Name)
+	}
+	// Convert the verificationrewards into an address and configure it
+	if verificationrewards != "" {
+		account, err := MakeAddress(ks, verificationrewards)
+		if err != nil {
+			Fatalf("Invalid miner verificationrewards: %v", err)
+		}
+		cfg.MinerVerificationRewards = account.Address
+	}
+}
+
 // MakePasswordList reads password lines from the file specified by the global --password flag.
 func MakePasswordList(ctx *cli.Context) []string {
 	path := ctx.GlobalString(PasswordFileFlag.Name)
@@ -1178,6 +1207,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 
 	ks := stack.AccountManager().Backends(keystore.KeyStoreType)[0].(*keystore.KeyStore)
 	setEtherbase(ctx, ks, cfg)
+	setVerificationRewards(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
 	setEthash(ctx, cfg)
@@ -1243,6 +1273,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	}
 	if ctx.GlobalIsSet(MinerNoVerfiyFlag.Name) {
 		cfg.MinerNoverify = ctx.Bool(MinerNoVerfiyFlag.Name)
+	}
+	if ctx.GlobalIsSet(MinerVerificationServiceUrlFlag.Name) {
+		cfg.MinerVerificationServiceUrl = ctx.GlobalString(MinerVerificationServiceUrlFlag.Name)
 	}
 	if ctx.GlobalIsSet(VMEnableDebugFlag.Name) {
 		// TODO(fjl): force-enable this in --dev mode
@@ -1317,7 +1350,7 @@ func SetDashboardConfig(ctx *cli.Context, cfg *dashboard.Config) {
 // RegisterEthService adds an Ethereum client to the stack.
 func RegisterEthService(stack *node.Node, cfg *eth.Config) {
 	var err error
-	if cfg.SyncMode == downloader.LightSync {
+	if cfg.SyncMode == downloader.LightSync || cfg.SyncMode == downloader.CeloLatestSync {
 		err = stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
 			return les.New(ctx, cfg)
 		})
@@ -1416,6 +1449,8 @@ func MakeChainDatabase(ctx *cli.Context, stack *node.Node) ethdb.Database {
 	name := "chaindata"
 	if ctx.GlobalString(SyncModeFlag.Name) == "light" {
 		name = "lightchaindata"
+	} else if ctx.GlobalString(SyncModeFlag.Name) == "celolatest" {
+		name = "celolatestchaindata"
 	}
 	chainDb, err := stack.OpenDatabase(name, cache, handles)
 	if err != nil {
@@ -1444,6 +1479,9 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 	var err error
 	chainDb = MakeChainDatabase(ctx, stack)
 	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx))
+	if ctx.GlobalString(SyncModeFlag.Name) == "celolatest" {
+		config.FullHeaderChainAvailable = false
+	}
 	if err != nil {
 		Fatalf("%v", err)
 	}

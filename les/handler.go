@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"net"
 	"sync"
 	"time"
 
@@ -76,7 +75,7 @@ type BlockChain interface {
 	GetTd(hash common.Hash, number uint64) *big.Int
 	State() (*state.StateDB, error)
 	InsertHeaderChain(chain []*types.Header, checkFreq int) (int, error)
-	Rollback(chain []common.Hash)
+	Rollback(chain []common.Hash, fullHeaderChainAvailable bool)
 	GetHeaderByNumber(number uint64) *types.Header
 	GetAncestor(hash common.Hash, number, ancestor uint64, maxNonCanonical *uint64) (common.Hash, uint64)
 	Genesis() *types.Block
@@ -124,7 +123,8 @@ type ProtocolManager struct {
 
 // NewProtocolManager returns a new ethereum sub protocol manager. The Ethereum sub protocol manages peers capable
 // with the ethereum network.
-func NewProtocolManager(chainConfig *params.ChainConfig, indexerConfig *light.IndexerConfig, lightSync bool, networkId uint64, mux *event.TypeMux, engine consensus.Engine, peers *peerSet, blockchain BlockChain, txpool txPool, chainDb ethdb.Database, odr *LesOdr, txrelay *LesTxRelay, serverPool *serverPool, quitSync chan struct{}, wg *sync.WaitGroup) (*ProtocolManager, error) {
+func NewProtocolManager(chainConfig *params.ChainConfig, indexerConfig *light.IndexerConfig, syncMode downloader.SyncMode, networkId uint64, mux *event.TypeMux, engine consensus.Engine, peers *peerSet, blockchain BlockChain, txpool txPool, chainDb ethdb.Database, odr *LesOdr, txrelay *LesTxRelay, serverPool *serverPool, quitSync chan struct{}, wg *sync.WaitGroup) (*ProtocolManager, error) {
+	lightSync := syncMode == downloader.LightSync || syncMode == downloader.CeloLatestSync
 	// Create the protocol manager with the base fields
 	manager := &ProtocolManager{
 		lightSync:   lightSync,
@@ -154,8 +154,8 @@ func NewProtocolManager(chainConfig *params.ChainConfig, indexerConfig *light.In
 		removePeer = func(id string) {}
 	}
 
-	if lightSync {
-		manager.downloader = downloader.New(downloader.LightSync, chainDb, manager.eventMux, nil, blockchain, removePeer)
+	if syncMode == downloader.LightSync || syncMode == downloader.CeloLatestSync {
+		manager.downloader = downloader.New(syncMode, chainDb, manager.eventMux, nil, blockchain, removePeer)
 		manager.peers.notify((*downloaderPeerNotify)(manager))
 		manager.fetcher = newLightFetcher(manager)
 	}
@@ -262,15 +262,14 @@ func (pm *ProtocolManager) handle(p *peer) error {
 	}
 
 	if !pm.lightSync && !p.Peer.Info().Network.Trusted {
-		addr, ok := p.RemoteAddr().(*net.TCPAddr)
-		// test peer address is not a tcp address, don't use client pool if can not typecast
-		if ok {
-			id := addr.IP.String()
-			if !pm.clientPool.connect(id, func() { go pm.removePeer(p.id) }) {
-				return p2p.DiscTooManyPeers
-			}
-			defer pm.clientPool.disconnect(id)
+		// geth upstream uses the IP address for the client pool to protect against malicious clients, in here we'll just use the peer's ID which can be changed but allows us to circumvent:
+		// 1. Kubernetes internal networking putting clients on the "same IP"
+		// 2. Light clients being on the same Wifi network
+		if !pm.clientPool.connect(p.id, func() { go pm.removePeer(p.id) }) {
+			p.Log().Debug(fmt.Sprintf("Unable to connect peer to client pool"))
+			return p2p.DiscTooManyPeers
 		}
+		defer pm.clientPool.disconnect(p.id)
 	}
 
 	if rw, ok := p.rw.(*meteredMsgReadWriter); ok {

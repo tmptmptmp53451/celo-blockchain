@@ -19,6 +19,7 @@ package light
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -314,7 +315,8 @@ func (bc *LightChain) Stop() {
 
 // Rollback is designed to remove a chain of links from the database that aren't
 // certain enough to be valid.
-func (self *LightChain) Rollback(chain []common.Hash) {
+func (self *LightChain) Rollback(chain []common.Hash, fullHeaderChainAvailable bool) {
+	log.Warn(fmt.Sprintf("Rollback %v", chain))
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
@@ -322,7 +324,14 @@ func (self *LightChain) Rollback(chain []common.Hash) {
 		hash := chain[i]
 
 		if head := self.hc.CurrentHeader(); head.Hash() == hash {
-			self.hc.SetCurrentHeader(self.GetHeader(head.ParentHash, head.Number.Uint64()-1))
+			parentHeader := self.GetHeader(head.ParentHash, head.Number.Uint64()-1)
+			// In all sync modes except CeloLatestSync, a complete header chain is available.
+			// Maintain the old behavior in those cases.
+			if fullHeaderChainAvailable || parentHeader != nil {
+				self.hc.SetCurrentHeader(parentHeader)
+			} else {
+				log.Warn(fmt.Sprintf("Cannot rollback current head %v, parent block is missing", head))
+			}
 		}
 	}
 }
@@ -357,6 +366,7 @@ func (self *LightChain) postChainEvents(events []interface{}) {
 func (self *LightChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (int, error) {
 	start := time.Now()
 	if i, err := self.hc.ValidateHeaderChain(chain, checkFreq); err != nil {
+		log.Error(fmt.Sprintf("Failed to validate the header chain at %d due to \"%v\"", i, err))
 		return i, err
 	}
 
@@ -390,6 +400,9 @@ func (self *LightChain) InsertHeaderChain(chain []*types.Header, checkFreq int) 
 	}
 	i, err := self.hc.InsertHeaderChain(chain, whFunc, start)
 	self.postChainEvents(events)
+	if err != nil {
+		log.Debug("InsertHeaderChaim", "failing index number", i, "err", err)
+	}
 	return i, err
 }
 

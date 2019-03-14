@@ -33,7 +33,6 @@ import (
 	"github.com/ethereum/go-ethereum/swarm/storage"
 	"github.com/ethereum/go-ethereum/swarm/testutil"
 	"github.com/pborman/uuid"
-
 	cli "gopkg.in/urfave/cli.v1"
 )
 

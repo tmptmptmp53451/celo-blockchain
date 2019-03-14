@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethdb"
@@ -39,6 +39,11 @@ func init() {
 	MaxForkAncestry = uint64(10000)
 	blockCacheItems = 1024
 	fsHeaderContCheck = 500 * time.Millisecond
+
+	// configure logger by uncommenting this to enable more logging
+	//glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
+	//glogger.Verbosity(log.LvlInfo)
+	//log.Root().SetHandler(glogger)
 }
 
 // downloadTester is a test simulator for mocking out local block chain.
@@ -270,7 +275,7 @@ func (dl *downloadTester) InsertReceiptChain(blocks types.Blocks, receipts []typ
 }
 
 // Rollback removes some recently added elements from the chain.
-func (dl *downloadTester) Rollback(hashes []common.Hash) {
+func (dl *downloadTester) Rollback(hashes []common.Hash, fullHeaderChainAvailable bool) {
 	dl.lock.Lock()
 	defer dl.lock.Unlock()
 
@@ -406,7 +411,7 @@ func assertOwnForkedChain(t *testing.T, tester *downloadTester, common int, leng
 		blocks += length - common
 		receipts += length - common
 	}
-	if tester.downloader.mode == LightSync {
+	if tester.downloader.Mode == LightSync {
 		blocks, receipts = 1, 1
 	}
 	if hs := len(tester.ownHeaders); hs != headers {

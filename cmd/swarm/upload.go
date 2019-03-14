@@ -29,11 +29,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/cmd/utils"
 	"github.com/ethereum/go-ethereum/log"
 	swarm "github.com/ethereum/go-ethereum/swarm/api/client"
-
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"gopkg.in/urfave/cli.v1"
+	cli "gopkg.in/urfave/cli.v1"
 )
 
 var upCommand = cli.Command{

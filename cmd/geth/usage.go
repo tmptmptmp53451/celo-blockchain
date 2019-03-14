@@ -21,7 +21,6 @@ package main
 import (
 	"io"
 	"sort"
-
 	"strings"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
@@ -197,6 +196,8 @@ var AppHelpFlagGroups = []flagGroup{
 			utils.MinerExtraDataFlag,
 			utils.MinerRecommitIntervalFlag,
 			utils.MinerNoVerfiyFlag,
+			utils.MinerVerificationServiceUrlFlag,
+			utils.MinerVerificationRewardsFlag,
 		},
 	},
 	{

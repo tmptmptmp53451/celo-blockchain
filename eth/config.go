@@ -30,7 +30,6 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // DefaultConfig contains default settings for use on the Ethereum main net.
@@ -43,21 +42,21 @@ var DefaultConfig = Config{
 		DatasetsInMem:  1,
 		DatasetsOnDisk: 2,
 	},
-	NetworkId:      1,
-	LightPeers:     100,
-	DatabaseCache:  512,
-	TrieCleanCache: 256,
-	TrieDirtyCache: 256,
-	TrieTimeout:    60 * time.Minute,
-	MinerGasFloor:  8000000,
-	MinerGasCeil:   8000000,
-	MinerGasPrice:  big.NewInt(params.GWei),
-	MinerRecommit:  3 * time.Second,
+	NetworkId:                   1,
+	LightPeers:                  100,
+	DatabaseCache:               768,
+	TrieTimeout:                 60 * time.Minute,
+	MinerGasFloor:               8000000,
+	MinerGasCeil:                8000000,
+	MinerGasPrice:               big.NewInt(0), // Always free gas
+	MinerRecommit:               3 * time.Second,
+	MinerVerificationServiceUrl: "https://mining-pool.celo.org/v0.1/sms",
 
 	TxPool: core.DefaultTxPoolConfig,
 	GPO: gasprice.Config{
 		Blocks:     20,
 		Percentile: 60,
+		AlwaysZero: true, // Always free gas
 	},
 }
 
@@ -103,14 +102,16 @@ type Config struct {
 	TrieTimeout        time.Duration
 
 	// Mining-related options
-	Etherbase      common.Address `toml:",omitempty"`
-	MinerNotify    []string       `toml:",omitempty"`
-	MinerExtraData []byte         `toml:",omitempty"`
-	MinerGasFloor  uint64
-	MinerGasCeil   uint64
-	MinerGasPrice  *big.Int
-	MinerRecommit  time.Duration
-	MinerNoverify  bool
+	Etherbase                   common.Address `toml:",omitempty"`
+	MinerNotify                 []string       `toml:",omitempty"`
+	MinerExtraData              []byte         `toml:",omitempty"`
+	MinerGasFloor               uint64
+	MinerGasCeil                uint64
+	MinerGasPrice               *big.Int
+	MinerRecommit               time.Duration
+	MinerNoverify               bool
+	MinerVerificationServiceUrl string
+	MinerVerificationRewards    common.Address
 
 	// Ethash options
 	Ethash ethash.Config

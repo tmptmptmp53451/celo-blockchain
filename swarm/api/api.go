@@ -21,6 +21,7 @@ package api
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
@@ -28,13 +29,11 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"mime"
 	"net/http"
 	"path"
-	"strings"
-
-	"bytes"
-	"mime"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +45,6 @@ import (
 	"github.com/ethereum/go-ethereum/swarm/storage"
 	"github.com/ethereum/go-ethereum/swarm/storage/feed"
 	"github.com/ethereum/go-ethereum/swarm/storage/feed/lookup"
-
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

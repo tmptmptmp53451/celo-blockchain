@@ -1,9 +1,8 @@
 package bn256
 
 import (
-	"testing"
-
 	"crypto/rand"
+	"testing"
 )
 
 func TestRandomG2Marshal(t *testing.T) {
@@ -13,7 +12,7 @@ func TestRandomG2Marshal(t *testing.T) {
 			t.Error(err)
 			continue
 		}
-		t.Logf("%d: %x\n", n, g2.Marshal())
+		t.Logf("%x: %x\n", n.String(), g2.Marshal())
 	}
 }
 

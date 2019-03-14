@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/tests"
-
 	cli "gopkg.in/urfave/cli.v1"
 )
 

@@ -16,7 +16,11 @@
 
 package params
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 const (
 	GasLimitBoundDivisor uint64 = 1024    // The bound divisor of the gas limit, used in update calculations.
@@ -85,6 +89,11 @@ const (
 	Bn256ScalarMulGas       uint64 = 40000  // Gas needed for an elliptic curve scalar multiplication
 	Bn256PairingBaseGas     uint64 = 100000 // Base price for an elliptic curve pairing check
 	Bn256PairingPerPointGas uint64 = 80000  // Per-point price for an elliptic curve pairing check
+
+	// Celo precompiled contracts
+	// TODO(asa): Figure out what the actual gas cost of this contract should be.
+	VerificationRequestGas uint64 = 3000 // Per-message price for sending an SMS. Not an accurate representation of the real cost of sending an SMS.
+	GetCoinbaseGas         uint64 = 20   // Equivalent to the cost of the BLOCKHASH op
 )
 
 var (
@@ -92,4 +101,10 @@ var (
 	GenesisDifficulty      = big.NewInt(131072) // Difficulty of the Genesis block.
 	MinimumDifficulty      = big.NewInt(131072) // The minimum that the difficulty may ever be.
 	DurationLimit          = big.NewInt(13)     // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
+)
+
+var (
+	AuthorizedTransferAddress            = common.HexToAddress("0x000000000000000000000000000000000000ce10") // Address of the contract authorized to call the transfer precompiled contract.
+	AuthorizedRequestVerificationAddress = common.HexToAddress("0x0000000000000000000000000000000000000ABE") // Address of the contract authorized to call the requestVerification precompiled contract.
+	ReserveAddress                       = common.HexToAddress("0x000000000000000000000000000000000000601d") // Address of the reserve proxy contract.
 )

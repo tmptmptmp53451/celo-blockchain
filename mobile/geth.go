@@ -38,6 +38,14 @@ import (
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
 )
 
+// I am intentionally duplicating these constants different from downloader.SyncMode integer values, to ensure the
+// backwards compatibility where the mobile node defaults to LightSync.
+const SyncModeUnset = 0 // will be treated as SyncModeLightSync
+const SyncModeFullSync = 1
+const SyncModeFastSync = 2
+const SyncModeLightSync = 3
+const SyncModeCeloLatestSync = 4
+
 // NodeConfig represents the collection of configuration values to fine tune the Geth
 // node embedded into a mobile process. The available values are a subset of the
 // entire API provided by go-ethereum to reduce the maintenance surface and dev
@@ -76,6 +84,11 @@ type NodeConfig struct {
 
 	// Listening address of pprof server.
 	PprofAddress string
+
+	// Sync mode for the node (eth/downloader/modes.go)
+	// This has to be integer since Enum exports to Java are not supported by "gomobile"
+	// See getSyncMode(syncMode int)
+	SyncMode int
 }
 
 // defaultNodeConfig contains the default node configuration values to use if all
@@ -122,9 +135,10 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 		Version:     params.VersionWithMeta,
 		DataDir:     datadir,
 		KeyStoreDir: filepath.Join(datadir, "keystore"), // Mobile should never use internal keystores!
+		IPCPath:     "geth.ipc",
 		P2P: p2p.Config{
 			NoDiscovery:      true,
-			DiscoveryV5:      true,
+			DiscoveryV5:      false,
 			BootstrapNodesV5: config.BootstrapNodes.nodes,
 			ListenAddr:       ":0",
 			NAT:              nat.Any(),
@@ -157,7 +171,8 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	if config.EthereumEnabled {
 		ethConf := eth.DefaultConfig
 		ethConf.Genesis = genesis
-		ethConf.SyncMode = downloader.LightSync
+
+		ethConf.SyncMode = getSyncMode(config.SyncMode)
 		ethConf.NetworkId = uint64(config.EthereumNetworkID)
 		ethConf.DatabaseCache = config.EthereumDatabaseCache
 		if err := rawStack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
@@ -186,6 +201,25 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 		}
 	}
 	return &Node{rawStack}, nil
+}
+
+func getSyncMode(syncMode int) downloader.SyncMode {
+	switch syncMode {
+	case SyncModeFullSync:
+		return downloader.FullSync
+	case SyncModeFastSync:
+		return downloader.FastSync
+	case SyncModeUnset:
+		fallthrough
+		// If unset, default to light sync.
+		// This maintains backward compatibility.
+	case SyncModeLightSync:
+		return downloader.LightSync
+	case SyncModeCeloLatestSync:
+		return downloader.CeloLatestSync
+	default:
+		panic(fmt.Sprintf("Unexpected sync mode value: %d", syncMode))
+	}
 }
 
 // Start creates a live P2P node and starts running it.

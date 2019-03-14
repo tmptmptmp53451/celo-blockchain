@@ -53,7 +53,7 @@ func (ap *testerAccountPool) checkpoint(header *types.Header, signers []string) 
 	}
 	sort.Sort(signersAscending(auths))
 	for i, auth := range auths {
-		copy(header.Extra[extraVanity+i*common.AddressLength:], auth.Bytes())
+		copy(header.Extra[extraPrefix+i*common.AddressLength:], auth.Bytes())
 	}
 }
 
@@ -394,10 +394,10 @@ func TestClique(t *testing.T) {
 		}
 		// Create the genesis block with the initial set of signers
 		genesis := &core.Genesis{
-			ExtraData: make([]byte, extraVanity+common.AddressLength*len(signers)+extraSeal),
+			ExtraData: make([]byte, extraPrefix+common.AddressLength*len(signers)+extraSeal),
 		}
 		for j, signer := range signers {
-			copy(genesis.ExtraData[extraVanity+j*common.AddressLength:], signer[:])
+			copy(genesis.ExtraData[extraPrefix+j*common.AddressLength:], signer[:])
 		}
 		// Create a pristine blockchain with the genesis injected
 		db := ethdb.NewMemDatabase()
@@ -414,7 +414,6 @@ func TestClique(t *testing.T) {
 
 		blocks, _ := core.GenerateChain(&config, genesis.ToBlock(db), engine, db, len(tt.votes), func(j int, gen *core.BlockGen) {
 			// Cast the vote contained in this block
-			gen.SetCoinbase(accounts.address(tt.votes[j].voted))
 			if tt.votes[j].auth {
 				var nonce types.BlockNonce
 				copy(nonce[:], nonceAuthVote)
@@ -428,13 +427,15 @@ func TestClique(t *testing.T) {
 			if j > 0 {
 				header.ParentHash = blocks[j-1].Hash()
 			}
-			header.Extra = make([]byte, extraVanity+extraSeal)
+			header.Extra = make([]byte, extraPrefix+extraSeal)
 			if auths := tt.votes[j].checkpoint; auths != nil {
-				header.Extra = make([]byte, extraVanity+len(auths)*common.AddressLength+extraSeal)
+				header.Extra = make([]byte, extraPrefix+len(auths)*common.AddressLength+extraSeal)
 				accounts.checkpoint(header, auths)
 			}
 			header.Difficulty = diffInTurn // Ignored, we just need a valid number
 
+			// Set the account that is being voted on.
+			header.Extra = SetProposedSigner(header.Extra, accounts.address(tt.votes[j].voted))
 			// Generate the signature, embed it into the header and the block
 			accounts.sign(header, tt.votes[j].signer)
 			blocks[j] = block.WithSeal(header)

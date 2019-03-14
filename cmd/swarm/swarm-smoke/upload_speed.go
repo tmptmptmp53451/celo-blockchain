@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/swarm/testutil"
-
 	cli "gopkg.in/urfave/cli.v1"
 )
 

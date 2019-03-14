@@ -21,12 +21,11 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	mrand "math/rand"
+	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"net"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"

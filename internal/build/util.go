@@ -42,7 +42,8 @@ func MustRun(cmd *exec.Cmd) {
 		cmd.Stderr = os.Stderr
 		cmd.Stdout = os.Stdout
 		if err := cmd.Run(); err != nil {
-			log.Fatal(err)
+			log.Printf("Command failed \"%s\", err: \"%v\"", strings.Join(cmd.Args, " "), err)
+			log.Fatal(fmt.Sprintf("Command failed \"%s\", err: \"%v\"", strings.Join(cmd.Args, " "), err))
 		}
 	}
 }

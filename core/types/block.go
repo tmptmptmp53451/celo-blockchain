@@ -42,6 +42,11 @@ var (
 // out on a block.
 type BlockNonce [8]byte
 
+// A BlockSignature is a 65-byte signature of the previous blockHash. This makes
+// the public key available and verifies that the miner has access to the
+// private key associated with the etherbase.
+type BlockSignature [65]byte
+
 // EncodeNonce converts the given integer to a block nonce.
 func EncodeNonce(i uint64) BlockNonce {
 	var n BlockNonce
@@ -81,8 +86,9 @@ type Header struct {
 	GasUsed     uint64         `json:"gasUsed"          gencodec:"required"`
 	Time        *big.Int       `json:"timestamp"        gencodec:"required"`
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
-	MixDigest   common.Hash    `json:"mixHash"`
-	Nonce       BlockNonce     `json:"nonce"`
+	MixDigest   common.Hash    `json:"mixHash"          gencodec:"required"`
+	Nonce       BlockNonce     `json:"nonce"            gencodec:"required"`
+	Signature   BlockSignature `json:"signature"        gencodec:"required"`
 }
 
 // field type overrides for gencodec
@@ -299,6 +305,7 @@ func (b *Block) TxHash() common.Hash      { return b.header.TxHash }
 func (b *Block) ReceiptHash() common.Hash { return b.header.ReceiptHash }
 func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
+func (b *Block) Signature() []byte        { return common.CopyBytes(b.header.Signature[:]) }
 
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
 
