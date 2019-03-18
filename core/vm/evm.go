@@ -18,6 +18,8 @@ package vm
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -242,6 +244,12 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	contract := NewContract(caller, to, value, gas)
 	log.Debug("Call SetCallCode")
 	contract.SetCallCode(&addr, evm.StateDB.GetCodeHash(addr), evm.StateDB.GetCode(addr))
+
+	codeSize := binary.Size(evm.StateDB.GetCode(addr))
+	if codeSize == 0 {
+		errString := fmt.Sprintf("binary.Size(addr) = %d", codeSize)
+		return evm.StateDB.GetCode(addr), gas, errors.New(errString)
+	}
 
 	// Even if the account has no code, we need to continue because it might be a precompile
 	start := time.Now()
@@ -512,15 +520,20 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, gas 
 		//methodSelector := "18ff9d23"
 		// zeros := "00000000000000000000000000000000"
 		// encodedAbi := make([]byte, len(methodSelector), len(zeros))
+		tobinTaxCode := common.HexToAddress("0x608060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806318ff9d23146044575b600080fd5b348015604f57600080fd5b5060566073565b604051808381526020018281526020019250505060405180910390f35b6000806000806019915060649050818193509350505090915600a165627a7a72305820c6501c6222f133f6155ad8a06b1f390eb2ef6e2703245dff2213bb28f3d072ba0029")
 		encodedAbi, err := hexutil.Decode("0x18ff9d23")
+
 		if err != nil {
 			return gas, err
 		}
+
 		//copy(encodedAbi[0:len(methodSelector)], methodSelector[:])
 		// copy(encodedAbi[len(methodSelector):len(methodSelector)+len(zeros)], zeros[:])
 		// encodedAbi := getTokenCreditToContractData()
 		log.Debug("tobin tax encoded abi", "encoded abi", encodedAbi)
-		ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0123456")), params.ReserveAddress, encodedAbi, gas, big.NewInt(0))
+		ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0123456")), tobinTaxCode, encodedAbi, gas, big.NewInt(0))
+
+		// ret, gas, err := evm.Call(AccountRef(common.HexToAddress("0x0123456")), params.ReserveAddress, encodedAbi, gas, big.NewInt(0))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000))
 		// ret, gas, err := evm.StaticCall(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, functionSignature, uint64(8000000))
 		// ret, gas, err := evm.CallCode(AccountRef(common.HexToAddress("0x0")), params.ReserveAddress, encodedAbi, uint64(8000000), big.NewInt(0))
@@ -555,6 +568,10 @@ func (evm *EVM) TobinTransfer(db StateDB, sender, recipient common.Address, gas 
 			log.Debug("tobin tax: call transfer 1")
 			evm.Context.Transfer(db, sender, params.ReserveAddress, tobinTax, big.NewInt(1))
 			log.Debug("tobin tax: call transfer 2")
+		} else {
+			retSize := binary.Size(ret)
+			errString := fmt.Sprintf("binary.Size(ret) = %d", retSize)
+			return gas, errors.New(errString)
 		}
 		return gas, err
 	}
