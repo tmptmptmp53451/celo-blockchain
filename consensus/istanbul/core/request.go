@@ -23,14 +23,14 @@ func (c *core) handleRequest(request *istanbul.Request) error {
 
 	if err := c.checkRequestMsg(request); err != nil {
 		if err == errInvalidMessage {
-			logger.Warn("invalid request")
+			logger.Info("invalid request")
 			return err
 		}
-		logger.Warn("unexpected request", "err", err, "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
+		logger.Info("unexpected request", "err", err, "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 		return err
 	}
 
-	logger.Trace("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
+	logger.Info("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 
 	c.current.pendingRequest = request
 	if c.state == StateAcceptRequest {
