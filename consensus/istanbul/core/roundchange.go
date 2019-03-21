@@ -22,6 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // sendNextRoundChange sends the ROUND CHANGE message with current round + 1
@@ -66,6 +67,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 }
 
 func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
+	log.Info("handleRoundChange")
 	logger := c.logger.New("state", c.state, "from", src.Address().Hex())
 
 	// Decode ROUND CHANGE message
