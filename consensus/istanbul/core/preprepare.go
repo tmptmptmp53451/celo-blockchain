@@ -21,6 +21,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
@@ -46,6 +47,7 @@ func (c *core) sendPreprepare(request *istanbul.Request) {
 }
 
 func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
+	log.Info("handlePreprepare")
 	logger := c.logger.New("from", src, "state", c.state)
 
 	// Decode PRE-PREPARE
