@@ -529,6 +529,7 @@ func (w *worker) taskLoop() {
 			// Reject duplicate sealing work due to resubmitting.
 			sealHash := w.engine.SealHash(task.block.Header())
 			if sealHash == prev {
+				log.Warn("duplicate Seal")
 				continue
 			}
 			// Interrupt previous sealing operation
@@ -536,6 +537,7 @@ func (w *worker) taskLoop() {
 			stopCh, prev = make(chan struct{}), sealHash
 
 			if w.skipSealHook != nil && w.skipSealHook(task) {
+				log.Warn("skip Seal")
 				continue
 			}
 			w.pendingMu.Lock()
