@@ -384,6 +384,7 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 // seal place on top.
 func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	// update the block header timestamp and signature and propose the block to core engine
+	log.Warn("Seal")
 	header := block.Header()
 	number := header.Number.Uint64()
 
