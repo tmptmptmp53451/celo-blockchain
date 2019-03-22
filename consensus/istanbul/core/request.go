@@ -23,17 +23,18 @@ import (
 
 func (c *core) handleRequest(request *istanbul.Request) error {
 	logger := c.logger.New("state", c.state, "seq", c.current.sequence)
+	logger.Info("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 
 	if err := c.checkRequestMsg(request); err != nil {
 		if err == errInvalidMessage {
+			log.Warn("invalid request")
 			logger.Info("invalid request")
 			return err
 		}
+		log.Warn("unexpectedRequest", "err", err, "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 		logger.Info("unexpected request", "err", err, "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 		return err
 	}
-	log.Warn("handleRequest", "number", request.Proposal.Number())
-	logger.Info("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 
 	c.current.pendingRequest = request
 	if c.state == StateAcceptRequest {

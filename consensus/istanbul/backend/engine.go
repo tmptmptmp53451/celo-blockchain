@@ -420,11 +420,11 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 	sb.sealMu.Lock()
 	log.Warn("seal lock acquired")
 
-	if sb.proposedBlockHash != (common.Hash{}) {
-		log.Warn("Already proposed", "number", number, "hash", sb.proposedBlockHash, "rejhash", block.Hash())
-		sb.sealMu.Unlock()
-		return nil
-	}
+	// if sb.proposedBlockHash != (common.Hash{}) {
+	// 	log.Warn("Already proposed", "number", number, "hash", sb.proposedBlockHash, "rejhash", block.Hash())
+	// 	sb.sealMu.Unlock()
+	// 	return nil
+	// }
 
 	sb.proposedBlockHash = block.Hash()
 	clear := func() {
