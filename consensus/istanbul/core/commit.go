@@ -25,7 +25,9 @@ import (
 )
 
 func (c *core) sendCommit() {
+
 	sub := c.current.Subject()
+	log.Warn("sendCommit", "round", sub.View.Round, "sequence", sub.View.Sequence)
 	c.broadcastCommit(sub)
 }
 
@@ -59,6 +61,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	if err != nil {
 		return errFailedDecodeCommit
 	}
+	log.Warn("handleCommit", "round", commit.View.Round, "sequence", commit.View.Sequence)
 
 	if err := c.checkMessage(msgCommit, commit.View); err != nil {
 		return err
@@ -67,7 +70,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	if err := c.verifyCommit(commit, src); err != nil {
 		return err
 	}
-
+	log.Warn("acceptCommit")
 	c.acceptCommit(msg, src)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.

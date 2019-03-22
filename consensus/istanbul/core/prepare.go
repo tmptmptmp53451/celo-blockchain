@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 func (c *core) sendPrepare() {
@@ -39,12 +40,13 @@ func (c *core) sendPrepare() {
 
 func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	// Decode PREPARE message
+	log.Warn("handlePrepare")
 	var prepare *istanbul.Subject
 	err := msg.Decode(&prepare)
 	if err != nil {
 		return errFailedDecodePrepare
 	}
-
+	log.Warn("handlePrepare", "round", prepare.View.Round, "sequence", prepare.View.Sequence)
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
 		return err
 	}

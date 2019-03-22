@@ -19,6 +19,7 @@ package core
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // Start implements core.Engine.Start
@@ -194,9 +195,11 @@ func (c *core) handleTimeoutMsg() {
 
 	lastProposal, _ := c.backend.LastProposal()
 	if lastProposal != nil && lastProposal.Number().Cmp(c.current.Sequence()) >= 0 {
+		log.Warn("round change timeout")
 		c.logger.Info("round change timeout, catch up latest sequence", "number", lastProposal.Number().Uint64())
 		c.startNewRound(common.Big0)
 	} else {
+		log.Warn("round change timeout nextRound")
 		c.sendNextRoundChange()
 	}
 }
