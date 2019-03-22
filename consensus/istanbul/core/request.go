@@ -16,7 +16,10 @@
 
 package core
 
-import "github.com/ethereum/go-ethereum/consensus/istanbul"
+import (
+	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
+)
 
 func (c *core) handleRequest(request *istanbul.Request) error {
 	logger := c.logger.New("state", c.state, "seq", c.current.sequence)
@@ -29,7 +32,7 @@ func (c *core) handleRequest(request *istanbul.Request) error {
 		logger.Info("unexpected request", "err", err, "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 		return err
 	}
-
+	log.Warn("handleRequest", "number", request.Proposal.Number())
 	logger.Info("handleRequest", "number", request.Proposal.Number(), "hash", request.Proposal.Hash())
 
 	c.current.pendingRequest = request
