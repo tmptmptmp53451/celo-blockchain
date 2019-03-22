@@ -418,6 +418,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 	log.Warn("seal lock block")
 	// get the proposed block hash and clear it if the seal() is completed.
 	sb.sealMu.Lock()
+	log.Warn("seal lock acquired")
 	sb.proposedBlockHash = block.Hash()
 	clear := func() {
 		sb.proposedBlockHash = common.Hash{}
