@@ -1274,7 +1274,11 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 	stats.ignored += it.remaining()
 
 	// Append a single chain head event if we've progressed the chain
+	if lastCanon != nil {
+		log.Warn("insertChain", "lastCanon", lastCanon.NumberU64(), "hash", lastCanon.Hash(), "currentBlock", bc.CurrentBlock().NumberU64())
+	}
 	if lastCanon != nil && bc.CurrentBlock().Hash() == lastCanon.Hash() {
+		log.Warn("apppendChainHeadEvent")
 		events = append(events, ChainHeadEvent{lastCanon})
 	}
 	return it.index, events, coalescedLogs, err
@@ -1522,6 +1526,7 @@ func (bc *BlockChain) PostChainEvents(events []interface{}, logs []*types.Log) {
 			bc.chainFeed.Send(ev)
 
 		case ChainHeadEvent:
+			log.Warn("send ChainHeadEvent", ev.Block.NumberU64())
 			bc.chainHeadFeed.Send(ev)
 
 		case ChainSideEvent:
