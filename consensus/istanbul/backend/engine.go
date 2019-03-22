@@ -396,7 +396,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 	if _, v := snap.ValSet.GetByAddress(sb.address); v == nil {
 		return errUnauthorized
 	}
-
+	log.Warn("seal past author")
 	parent := chain.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
@@ -406,6 +406,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		return err
 	}
 
+	log.Warn("wait until block header")
 	// wait for the timestamp of header, use this to adjust the block period
 	delay := time.Unix(block.Header().Time.Int64(), 0).Sub(now())
 	select {
@@ -414,6 +415,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		return nil
 	}
 
+	log.Warn("seal lock block")
 	// get the proposed block hash and clear it if the seal() is completed.
 	sb.sealMu.Lock()
 	sb.proposedBlockHash = block.Hash()
@@ -422,6 +424,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		sb.sealMu.Unlock()
 	}
 
+	log.Warn("post into istanbul")
 	// post block into Istanbul engine
 	go sb.EventMux().Post(istanbul.RequestEvent{
 		Proposal: block,
