@@ -169,7 +169,7 @@ func (c *core) commit() {
 			committedSeals[i] = make([]byte, types.IstanbulExtraSeal)
 			copy(committedSeals[i][:], v.CommittedSeal[:])
 		}
-
+		log.Warn("istanbul backend commit")
 		if err := c.backend.Commit(proposal, committedSeals); err != nil {
 			log.Warn("NISTANBUL Commit failed, send round change")
 			c.current.UnlockHash() //Unlock block when insertion fails
@@ -191,6 +191,7 @@ func (c *core) startNewRound(round *big.Int) {
 	roundChange := false
 	// Try to get last proposal
 	lastProposal, lastProposer := c.backend.LastProposal()
+	log.Warn("startNewRound")
 	if c.current == nil {
 		logger.Trace("Start to the initial round")
 	} else if lastProposal.Number().Cmp(c.current.Sequence()) >= 0 {
@@ -215,6 +216,8 @@ func (c *core) startNewRound(round *big.Int) {
 		logger.Warn("New sequence should be larger than current sequence", "new_seq", lastProposal.Number().Int64())
 		return
 	}
+
+	log.Warn("startNewRound passed condit")
 
 	var newView *istanbul.View
 	if roundChange {
@@ -241,6 +244,7 @@ func (c *core) startNewRound(round *big.Int) {
 	c.waitingForRoundChange = false
 	c.setState(StateAcceptRequest)
 	if roundChange && c.isProposer() && c.current != nil {
+		log.Warn("i'm proposer now")
 		// If it is locked, propose the old proposal
 		// If we have pending request, propose pending request
 		if c.current.IsHashLocked() {
@@ -285,6 +289,8 @@ func (c *core) updateRoundState(view *istanbul.View, validatorSet istanbul.Valid
 	} else {
 		c.current = newRoundState(view, validatorSet, common.Hash{}, nil, nil, c.backend.HasBadProposal)
 	}
+
+	log.Warn("updatedRoundState", "round", c.current.Round, "sequence", c.current.Sequence)
 }
 
 func (c *core) setState(state State) {

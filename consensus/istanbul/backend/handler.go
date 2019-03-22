@@ -22,6 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	lru "github.com/hashicorp/golang-lru"
 )
@@ -93,6 +94,7 @@ func (sb *Backend) SetBroadcaster(broadcaster consensus.Broadcaster) {
 }
 
 func (sb *Backend) NewChainHead() error {
+	log.Warn("istanbul receives NewChainHead")
 	sb.coreMu.RLock()
 	defer sb.coreMu.RUnlock()
 	if !sb.coreStarted {
