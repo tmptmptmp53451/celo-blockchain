@@ -1526,7 +1526,7 @@ func (bc *BlockChain) PostChainEvents(events []interface{}, logs []*types.Log) {
 			bc.chainFeed.Send(ev)
 
 		case ChainHeadEvent:
-			log.Warn("send ChainHeadEvent", ev.Block.NumberU64())
+			log.Warn("send ChainHeadEvent", "block", ev.Block.NumberU64())
 			bc.chainHeadFeed.Send(ev)
 
 		case ChainSideEvent:

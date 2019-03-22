@@ -939,6 +939,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	}
 
 	istanbulEmptyBlockCommit := func() {
+		log.Warn("Istanbul empty commit")
 		if !noempty && w.isIstanbulEngine() {
 			w.commit(uncles, nil, false, tstart)
 		}
@@ -996,6 +997,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		return err
 	}
 	if w.isRunning() {
+		log.Warn("commit IsRunning")
 		if interval != nil {
 			interval()
 		}
