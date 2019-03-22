@@ -27,6 +27,7 @@ func (c *core) sendPrepare() {
 	logger := c.logger.New("state", c.state)
 
 	sub := c.current.Subject()
+	log.Warn("sendPrepare", "round", sub.View.Round, "sequence", sub.View.Sequence)
 	encodedSubject, err := Encode(sub)
 	if err != nil {
 		logger.Error("Failed to encode", "subject", sub)

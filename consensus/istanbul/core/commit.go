@@ -70,9 +70,9 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	if err := c.verifyCommit(commit, src); err != nil {
 		return err
 	}
-	log.Warn("acceptCommit")
-	c.acceptCommit(msg, src)
 
+	c.acceptCommit(msg, src)
+	log.Warn("acceptCommit", "currentCommitSize", c.current.Commits.Size())
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
 	// If we already have a proposal, we may have chance to speed up the consensus process
