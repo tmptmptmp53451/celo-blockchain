@@ -391,6 +391,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 	header := block.Header()
 	number := header.Number.Uint64()
 
+	log.Warn("[Istanbul] Check authorization in snapshot")
 	// Bail out if we're unauthorized to sign a block
 	snap, err := sb.snapshot(chain, number-1, header.ParentHash, nil)
 	if err != nil {
@@ -417,6 +418,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		return nil
 	}
 
+	log.Warn("[Istanbul] Trying to acquire lock")
 	// get the proposed block hash and clear it if the seal() is completed.
 	sb.sealMu.Lock()
 	sb.proposedBlockHash = block.Hash()
@@ -425,6 +427,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 		sb.sealMu.Unlock()
 	}
 
+	log.Warn("[Istanbul] Plug into engine")
 	// post block into Istanbul engine
 	go sb.EventMux().Post(istanbul.RequestEvent{
 		Proposal: block,
