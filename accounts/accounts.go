@@ -70,6 +70,9 @@ type Wallet interface {
 	// Contains returns whether an account is part of this particular wallet or not.
 	Contains(account Account) bool
 
+	// Decrypt decrypts an ECIES ciphertext.
+	Decrypt(account Account, c, s1, s2 []byte) ([]byte, error)
+
 	// Derive attempts to explicitly derive a hierarchical deterministic account at
 	// the specified derivation path. If requested, the derived account will be added
 	// to the wallet's tracked account list.
@@ -106,7 +109,7 @@ type Wallet interface {
 	// or optionally with the aid of any location metadata from the embedded URL field.
 	//
 	// If the wallet requires additional authentication to sign the request (e.g.
-	// a password to decrypt the account, or a PIN code o verify the transaction),
+	// a password to decrypt the account, or a PIN code to verify the transaction),
 	// an AuthNeededError instance will be returned, containing infos for the user
 	// about which fields or actions are needed. The user may retry by providing
 	// the needed details via SignTxWithPassphrase, or by other means (e.g. unlock

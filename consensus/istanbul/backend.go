@@ -59,8 +59,8 @@ type Backend interface {
 	// LastProposal retrieves latest committed proposal and the address of proposer
 	LastProposal() (Proposal, common.Address)
 
-	// HasPropsal checks if the combination of the given hash and height matches any existing blocks
-	HasPropsal(hash common.Hash, number *big.Int) bool
+	// HasProposal checks if the combination of the given hash and height matches any existing blocks
+	HasProposal(hash common.Hash, number *big.Int) bool
 
 	// GetProposer returns the proposer of the given block height
 	GetProposer(number uint64) common.Address
@@ -68,6 +68,6 @@ type Backend interface {
 	// ParentValidators returns the validator set of the given proposal's parent block
 	ParentValidators(proposal Proposal) ValidatorSet
 
-	// HasBadBlock returns whether the block with the hash is a bad block
+	// HasBadProposal returns whether the block with the hash is a bad block
 	HasBadProposal(hash common.Hash) bool
 }

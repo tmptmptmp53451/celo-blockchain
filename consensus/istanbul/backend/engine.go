@@ -31,11 +31,11 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	lru "github.com/hashicorp/golang-lru"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -66,8 +66,6 @@ var (
 	errInvalidNonce = errors.New("invalid nonce")
 	// errInvalidUncleHash is returned if a block contains an non-empty uncle list.
 	errInvalidUncleHash = errors.New("non empty uncle hash")
-	// errInconsistentValidatorSet is returned if the validator set is inconsistent
-	errInconsistentValidatorSet = errors.New("non empty uncle hash")
 	// errInvalidTimestamp is returned if the timestamp of a block is lower than the previous block's timestamp + the minimum block period.
 	errInvalidTimestamp = errors.New("invalid timestamp")
 	// errInvalidVotingChain is returned if an authorization list is attempted to
@@ -99,14 +97,14 @@ var (
 // Author retrieves the Ethereum address of the account that minted the given
 // block, which may be different from the header's coinbase if a consensus
 // engine is based on signatures.
-func (sb *backend) Author(header *types.Header) (common.Address, error) {
+func (sb *Backend) Author(header *types.Header) (common.Address, error) {
 	return ecrecover(header)
 }
 
 // VerifyHeader checks whether a header conforms to the consensus rules of a
 // given engine. Verifying the seal may be done optionally here, or explicitly
 // via the VerifySeal method.
-func (sb *backend) VerifyHeader(chain consensus.ChainReader, header *types.Header, seal bool) error {
+func (sb *Backend) VerifyHeader(chain consensus.ChainReader, header *types.Header, seal bool) error {
 	return sb.verifyHeader(chain, header, nil)
 }
 
@@ -114,7 +112,7 @@ func (sb *backend) VerifyHeader(chain consensus.ChainReader, header *types.Heade
 // caller may optionally pass in a batch of parents (ascending order) to avoid
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
-func (sb *backend) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+func (sb *Backend) verifyHeader(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	if header.Number == nil {
 		return errUnknownBlock
 	}
@@ -153,7 +151,7 @@ func (sb *backend) verifyHeader(chain consensus.ChainReader, header *types.Heade
 // rather depend on a batch of previous headers. The caller may optionally pass
 // in a batch of parents (ascending order) to avoid looking those up from the
 // database. This is useful for concurrently verifying a batch of new headers.
-func (sb *backend) verifyCascadingFields(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+func (sb *Backend) verifyCascadingFields(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	// The genesis block is the always valid dead-end
 	number := header.Number.Uint64()
 	if number == 0 {
@@ -166,23 +164,19 @@ func (sb *backend) verifyCascadingFields(chain consensus.ChainReader, header *ty
 	} else {
 		parent = chain.GetHeader(header.ParentHash, number-1)
 	}
-	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
-		return consensus.ErrUnknownAncestor
-	}
-	if parent.Time.Uint64()+sb.config.BlockPeriod > header.Time.Uint64() {
-		return errInvalidTimestamp
-	}
-	// Verify validators in extraData. Validators in snapshot and extraData should be the same.
-	snap, err := sb.snapshot(chain, number-1, header.ParentHash, parents)
-	if err != nil {
-		return err
-	}
-	validators := make([]byte, len(snap.validators())*common.AddressLength)
-	for i, validator := range snap.validators() {
-		copy(validators[i*common.AddressLength:], validator[:])
-	}
-	if err := sb.verifySigner(chain, header, parents); err != nil {
-		return err
+	if chain.Config().FullHeaderChainAvailable {
+
+		if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
+			log.Error("[nam] I should not be here")
+			return consensus.ErrUnknownAncestor
+		}
+		if parent.Time.Uint64()+sb.config.BlockPeriod > header.Time.Uint64() {
+			return errInvalidTimestamp
+		}
+		// Verify validators in extraData. Validators in snapshot and extraData should be the same.
+		if err := sb.verifySigner(chain, header, parents); err != nil {
+			return err
+		}
 	}
 
 	return sb.verifyCommittedSeals(chain, header, parents)
@@ -192,7 +186,7 @@ func (sb *backend) verifyCascadingFields(chain consensus.ChainReader, header *ty
 // concurrently. The method returns a quit channel to abort the operations and
 // a results channel to retrieve the async verifications (the order is that of
 // the input slice).
-func (sb *backend) VerifyHeaders(chain consensus.ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error) {
+func (sb *Backend) VerifyHeaders(chain consensus.ChainReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error) {
 	abort := make(chan struct{})
 	results := make(chan error, len(headers))
 	go func() {
@@ -211,7 +205,7 @@ func (sb *backend) VerifyHeaders(chain consensus.ChainReader, headers []*types.H
 
 // VerifyUncles verifies that the given block's uncles conform to the consensus
 // rules of a given engine.
-func (sb *backend) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
+func (sb *Backend) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
 	if len(block.Uncles()) > 0 {
 		return errInvalidUncleHash
 	}
@@ -219,7 +213,7 @@ func (sb *backend) VerifyUncles(chain consensus.ChainReader, block *types.Block)
 }
 
 // verifySigner checks whether the signer is in parent's validator set
-func (sb *backend) verifySigner(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+func (sb *Backend) verifySigner(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
@@ -246,7 +240,7 @@ func (sb *backend) verifySigner(chain consensus.ChainReader, header *types.Heade
 }
 
 // verifyCommittedSeals checks whether every committed seal is signed by one of the parent's validators
-func (sb *backend) verifyCommittedSeals(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
+func (sb *Backend) verifyCommittedSeals(chain consensus.ChainReader, header *types.Header, parents []*types.Header) error {
 	number := header.Number.Uint64()
 	// We don't need to verify committed seals in the genesis block
 	if number == 0 {
@@ -299,7 +293,7 @@ func (sb *backend) verifyCommittedSeals(chain consensus.ChainReader, header *typ
 
 // VerifySeal checks whether the crypto seal on a header is valid according to
 // the consensus rules of the given engine.
-func (sb *backend) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
+func (sb *Backend) VerifySeal(chain consensus.ChainReader, header *types.Header) error {
 	// get parent header and ensure the signer is in parent's validator set
 	number := header.Number.Uint64()
 	if number == 0 {
@@ -315,7 +309,7 @@ func (sb *backend) VerifySeal(chain consensus.ChainReader, header *types.Header)
 
 // Prepare initializes the consensus fields of a block header according to the
 // rules of a particular engine. The changes are executed inline.
-func (sb *backend) Prepare(chain consensus.ChainReader, header *types.Header) error {
+func (sb *Backend) Prepare(chain consensus.ChainReader, header *types.Header) error {
 	// unused fields, force to set to empty
 	header.Coinbase = common.Address{}
 	header.Nonce = emptyNonce
@@ -380,7 +374,7 @@ func (sb *backend) Prepare(chain consensus.ChainReader, header *types.Header) er
 //
 // Note, the block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
+func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
 	uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 	// No block rewards in Istanbul, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
@@ -392,7 +386,7 @@ func (sb *backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 
 // Seal generates a new block for the given input block with the local miner's
 // seal place on top.
-func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error) {
+func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	// update the block header timestamp and signature and propose the block to core engine
 	header := block.Header()
 	number := header.Number.Uint64()
@@ -400,19 +394,19 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 	// Bail out if we're unauthorized to sign a block
 	snap, err := sb.snapshot(chain, number-1, header.ParentHash, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if _, v := snap.ValSet.GetByAddress(sb.address); v == nil {
-		return nil, errUnauthorized
+		return errUnauthorized
 	}
 
 	parent := chain.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
-		return nil, consensus.ErrUnknownAncestor
+		return consensus.ErrUnknownAncestor
 	}
 	block, err = sb.updateBlock(parent, block)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// wait for the timestamp of header, use this to adjust the block period
@@ -420,7 +414,7 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 	select {
 	case <-time.After(delay):
 	case <-stop:
-		return nil, nil
+		return nil
 	}
 
 	// get the proposed block hash and clear it if the seal() is completed.
@@ -430,36 +424,45 @@ func (sb *backend) Seal(chain consensus.ChainReader, block *types.Block, stop <-
 		sb.proposedBlockHash = common.Hash{}
 		sb.sealMu.Unlock()
 	}
-	defer clear()
 
 	// post block into Istanbul engine
 	go sb.EventMux().Post(istanbul.RequestEvent{
 		Proposal: block,
 	})
 
-	for {
-		select {
-		case result := <-sb.commitCh:
-			// if the block hash and the hash from channel are the same,
-			// return the result. Otherwise, keep waiting the next hash.
-			if block.Hash() == result.Hash() {
-				return result, nil
+	go func() {
+		defer clear()
+		for {
+			select {
+			case result := <-sb.commitCh:
+				// if the block hash and the hash from channel are the same,
+				// return the result. Otherwise, keep waiting the next hash.
+				if block.Hash() == result.Hash() {
+					results <- result
+					return
+				}
+			case <-stop:
+				return
 			}
-		case <-stop:
-			return nil, nil
 		}
-	}
+	}()
+	return nil
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
 // that a new block should have based on the previous blocks in the chain and the
 // current signer.
-func (sb *backend) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
+func (sb *Backend) CalcDifficulty(chain consensus.ChainReader, time uint64, parent *types.Header) *big.Int {
 	return defaultDifficulty
 }
 
+// SealHash returns the hash of a block prior to it being sealed.
+func (sb *Backend) SealHash(header *types.Header) common.Hash {
+	return sigHash(header)
+}
+
 // update timestamp and signature of the block based on its number of transactions
-func (sb *backend) updateBlock(parent *types.Header, block *types.Block) (*types.Block, error) {
+func (sb *Backend) updateBlock(parent *types.Header, block *types.Block) (*types.Block, error) {
 	header := block.Header()
 	// sign the hash
 	seal, err := sb.Sign(sigHash(header).Bytes())
@@ -476,7 +479,7 @@ func (sb *backend) updateBlock(parent *types.Header, block *types.Block) (*types
 }
 
 // APIs returns the RPC APIs this consensus engine provides.
-func (sb *backend) APIs(chain consensus.ChainReader) []rpc.API {
+func (sb *Backend) APIs(chain consensus.ChainReader) []rpc.API {
 	return []rpc.API{{
 		Namespace: "istanbul",
 		Version:   "1.0",
@@ -486,7 +489,7 @@ func (sb *backend) APIs(chain consensus.ChainReader) []rpc.API {
 }
 
 // Start implements consensus.Istanbul.Start
-func (sb *backend) Start(chain consensus.ChainReader, currentBlock func() *types.Block, hasBadBlock func(hash common.Hash) bool) error {
+func (sb *Backend) Start(chain consensus.ChainReader, currentBlock func() *types.Block, hasBadBlock func(hash common.Hash) bool) error {
 	sb.coreMu.Lock()
 	defer sb.coreMu.Unlock()
 	if sb.coreStarted {
@@ -513,7 +516,7 @@ func (sb *backend) Start(chain consensus.ChainReader, currentBlock func() *types
 }
 
 // Stop implements consensus.Istanbul.Stop
-func (sb *backend) Stop() error {
+func (sb *Backend) Stop() error {
 	sb.coreMu.Lock()
 	defer sb.coreMu.Unlock()
 	if !sb.coreStarted {
@@ -527,7 +530,7 @@ func (sb *backend) Stop() error {
 }
 
 // snapshot retrieves the authorization snapshot at a given point in time.
-func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash common.Hash, parents []*types.Header) (*Snapshot, error) {
+func (sb *Backend) snapshot(chain consensus.ChainReader, number uint64, hash common.Hash, parents []*types.Header) (*Snapshot, error) {
 	// Search for a snapshot in memory or on disk for checkpoints
 	var (
 		headers []*types.Header
@@ -576,18 +579,22 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 		} else {
 			// No explicit parents (or no more left), reach out to the database
 			header = chain.GetHeader(hash, number)
-			if header == nil {
+			if chain.Config().FullHeaderChainAvailable && header == nil {
 				return nil, consensus.ErrUnknownAncestor
 			}
 		}
-		headers = append(headers, header)
-		number, hash = number-1, header.ParentHash
+		if header != nil {
+			headers = append(headers, header)
+			number, hash = number-1, header.ParentHash
+		} else if !chain.Config().FullHeaderChainAvailable {
+			number = number - 1
+		}
 	}
 	// Previous snapshot found, apply any pending headers on top of it
 	for i := 0; i < len(headers)/2; i++ {
 		headers[i], headers[len(headers)-1-i] = headers[len(headers)-1-i], headers[i]
 	}
-	snap, err := snap.apply(headers)
+	snap, err := snap.apply(headers, chain.Config().FullHeaderChainAvailable)
 	if err != nil {
 		return nil, err
 	}
@@ -612,7 +619,7 @@ func (sb *backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 // panics. This is done to avoid accidentally using both forms (signature present
 // or not), which could be abused to produce different hashes for the same header.
 func sigHash(header *types.Header) (hash common.Hash) {
-	hasher := sha3.NewKeccak256()
+	hasher := sha3.NewLegacyKeccak256()
 
 	// Clean seal is required for calculating proposer seal.
 	rlp.Encode(hasher, types.IstanbulFilteredHeader(header, false))
@@ -666,7 +673,6 @@ func prepareExtra(header *types.Header, vals []common.Address) ([]byte, error) {
 }
 
 // writeSeal writes the extra-data field of the given header with the given seals.
-// suggest to rename to writeSeal.
 func writeSeal(h *types.Header, seal []byte) error {
 	if len(seal)%types.IstanbulExtraSeal != 0 {
 		return errInvalidSignature

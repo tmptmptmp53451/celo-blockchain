@@ -29,13 +29,22 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethstats"
+	"github.com/ethereum/go-ethereum/internal/debug"
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/params"
-	whisper "github.com/ethereum/go-ethereum/whisper/whisperv5"
+	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
 )
+
+// I am intentionally duplicating these constants different from downloader.SyncMode integer values, to ensure the
+// backwards compatibility where the mobile node defaults to LightSync.
+const SyncModeUnset = 0 // will be treated as SyncModeLightSync
+const SyncModeFullSync = 1
+const SyncModeFastSync = 2
+const SyncModeLightSync = 3
+const SyncModeCeloLatestSync = 4
 
 // NodeConfig represents the collection of configuration values to fine tune the Geth
 // node embedded into a mobile process. The available values are a subset of the
@@ -72,6 +81,14 @@ type NodeConfig struct {
 
 	// WhisperEnabled specifies whether the node should run the Whisper protocol.
 	WhisperEnabled bool
+
+	// Listening address of pprof server.
+	PprofAddress string
+
+	// Sync mode for the node (eth/downloader/modes.go)
+	// This has to be integer since Enum exports to Java are not supported by "gomobile"
+	// See getSyncMode(syncMode int)
+	SyncMode int
 }
 
 // defaultNodeConfig contains the default node configuration values to use if all
@@ -107,15 +124,21 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	if config.BootstrapNodes == nil || config.BootstrapNodes.Size() == 0 {
 		config.BootstrapNodes = defaultNodeConfig.BootstrapNodes
 	}
+
+	if config.PprofAddress != "" {
+		debug.StartPProf(config.PprofAddress)
+	}
+
 	// Create the empty networking stack
 	nodeConf := &node.Config{
 		Name:        clientIdentifier,
-		Version:     params.Version,
+		Version:     params.VersionWithMeta,
 		DataDir:     datadir,
 		KeyStoreDir: filepath.Join(datadir, "keystore"), // Mobile should never use internal keystores!
+		IPCPath:     "geth.ipc",
 		P2P: p2p.Config{
 			NoDiscovery:      true,
-			DiscoveryV5:      true,
+			DiscoveryV5:      false,
 			BootstrapNodesV5: config.BootstrapNodes.nodes,
 			ListenAddr:       ":0",
 			NAT:              nat.Any(),
@@ -126,6 +149,8 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	if err != nil {
 		return nil, err
 	}
+
+	debug.Memsize.Add("node", rawStack)
 
 	var genesis *core.Genesis
 	if config.EthereumGenesis != "" {
@@ -146,7 +171,8 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	if config.EthereumEnabled {
 		ethConf := eth.DefaultConfig
 		ethConf.Genesis = genesis
-		ethConf.SyncMode = downloader.LightSync
+
+		ethConf.SyncMode = getSyncMode(config.SyncMode)
 		ethConf.NetworkId = uint64(config.EthereumNetworkID)
 		ethConf.DatabaseCache = config.EthereumDatabaseCache
 		if err := rawStack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
@@ -177,12 +203,31 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	return &Node{rawStack}, nil
 }
 
+func getSyncMode(syncMode int) downloader.SyncMode {
+	switch syncMode {
+	case SyncModeFullSync:
+		return downloader.FullSync
+	case SyncModeFastSync:
+		return downloader.FastSync
+	case SyncModeUnset:
+		fallthrough
+		// If unset, default to light sync.
+		// This maintains backward compatibility.
+	case SyncModeLightSync:
+		return downloader.LightSync
+	case SyncModeCeloLatestSync:
+		return downloader.CeloLatestSync
+	default:
+		panic(fmt.Sprintf("Unexpected sync mode value: %d", syncMode))
+	}
+}
+
 // Start creates a live P2P node and starts running it.
 func (n *Node) Start() error {
 	return n.node.Start()
 }
 
-// Stop terminates a running node along with all it's services. In the node was
+// Stop terminates a running node along with all it's services. If the node was
 // not started, an error is returned.
 func (n *Node) Stop() error {
 	return n.node.Stop()

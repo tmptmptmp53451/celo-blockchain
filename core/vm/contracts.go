@@ -19,12 +19,16 @@ package vm
 import (
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/bn256"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"golang.org/x/crypto/ripemd160"
 )
@@ -33,8 +37,8 @@ import (
 // requires a deterministic gas count based on the input size of the Run method of the
 // contract.
 type PrecompiledContract interface {
-	RequiredGas(input []byte) uint64  // RequiredPrice calculates the contract gas use
-	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
+	RequiredGas(input []byte) uint64                                                       // RequiredGas calculates the contract gas use
+	Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) // Run runs the precompiled contract
 }
 
 // PrecompiledContractsHomestead contains the default set of pre-compiled Ethereum
@@ -45,6 +49,11 @@ var PrecompiledContractsHomestead = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{3}): &ripemd160hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 }
+
+var CeloPrecompiledContractsAddressOffset = byte(0xff)
+var requestVerificationAddress = common.BytesToAddress(append([]byte{0}, CeloPrecompiledContractsAddressOffset))
+var getCoinbaseAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 1)))
+var transferAddress = common.BytesToAddress(append([]byte{0}, (CeloPrecompiledContractsAddressOffset - 2)))
 
 // PrecompiledContractsByzantium contains the default set of pre-compiled Ethereum
 // contracts used in the Byzantium release.
@@ -57,15 +66,26 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{6}): &bn256Add{},
 	common.BytesToAddress([]byte{7}): &bn256ScalarMul{},
 	common.BytesToAddress([]byte{8}): &bn256Pairing{},
+
+	// Celo Precompiled Contracts
+	requestVerificationAddress: &requestVerification{},
+	getCoinbaseAddress:         &getCoinbase{},
+	transferAddress:            &transfer{},
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
-func RunPrecompiledContract(p PrecompiledContract, input []byte, contract *Contract) (ret []byte, err error) {
-	gas := p.RequiredGas(input)
-	if contract.UseGas(gas) {
-		return p.Run(input)
+func RunPrecompiledContract(p PrecompiledContract, input []byte, contract *Contract, evm *EVM) (ret []byte, err error) {
+	ret, gas, err := p.Run(input, contract.CallerAddress, evm, contract.Gas)
+	contract.UseGas(contract.Gas - gas)
+	return ret, err
+}
+
+func debitRequiredGas(p PrecompiledContract, input []byte, gas uint64) (uint64, error) {
+	requiredGas := p.RequiredGas(input)
+	if requiredGas > gas {
+		return gas, ErrOutOfGas
 	}
-	return nil, ErrOutOfGas
+	return gas - requiredGas, nil
 }
 
 // ECRECOVER implemented as a native contract.
@@ -75,7 +95,12 @@ func (c *ecrecover) RequiredGas(input []byte) uint64 {
 	return params.EcrecoverGas
 }
 
-func (c *ecrecover) Run(input []byte) ([]byte, error) {
+func (c *ecrecover) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	const ecRecoverInputLength = 128
 
 	input = common.RightPadBytes(input, ecRecoverInputLength)
@@ -88,17 +113,17 @@ func (c *ecrecover) Run(input []byte) ([]byte, error) {
 
 	// tighter sig s values input homestead only apply to tx sigs
 	if !allZero(input[32:63]) || !crypto.ValidateSignatureValues(v, r, s, false) {
-		return nil, nil
+		return nil, gas, nil
 	}
 	// v needs to be at the end for libsecp256k1
 	pubKey, err := crypto.Ecrecover(input[:32], append(input[64:128], v))
 	// make sure the public key is a valid one
 	if err != nil {
-		return nil, nil
+		return nil, gas, nil
 	}
 
 	// the first byte of pubkey is bitcoin heritage
-	return common.LeftPadBytes(crypto.Keccak256(pubKey[1:])[12:], 32), nil
+	return common.LeftPadBytes(crypto.Keccak256(pubKey[1:])[12:], 32), gas, nil
 }
 
 // SHA256 implemented as a native contract.
@@ -111,12 +136,17 @@ type sha256hash struct{}
 func (c *sha256hash) RequiredGas(input []byte) uint64 {
 	return uint64(len(input)+31)/32*params.Sha256PerWordGas + params.Sha256BaseGas
 }
-func (c *sha256hash) Run(input []byte) ([]byte, error) {
+func (c *sha256hash) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	h := sha256.Sum256(input)
-	return h[:], nil
+	return h[:], gas, nil
 }
 
-// RIPMED160 implemented as a native contract.
+// RIPEMD160 implemented as a native contract.
 type ripemd160hash struct{}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
@@ -126,10 +156,15 @@ type ripemd160hash struct{}
 func (c *ripemd160hash) RequiredGas(input []byte) uint64 {
 	return uint64(len(input)+31)/32*params.Ripemd160PerWordGas + params.Ripemd160BaseGas
 }
-func (c *ripemd160hash) Run(input []byte) ([]byte, error) {
+func (c *ripemd160hash) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	ripemd := ripemd160.New()
 	ripemd.Write(input)
-	return common.LeftPadBytes(ripemd.Sum(nil), 32), nil
+	return common.LeftPadBytes(ripemd.Sum(nil), 32), gas, nil
 }
 
 // data copy implemented as a native contract.
@@ -142,8 +177,13 @@ type dataCopy struct{}
 func (c *dataCopy) RequiredGas(input []byte) uint64 {
 	return uint64(len(input)+31)/32*params.IdentityPerWordGas + params.IdentityBaseGas
 }
-func (c *dataCopy) Run(in []byte) ([]byte, error) {
-	return in, nil
+func (c *dataCopy) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
+	return input, gas, nil
 }
 
 // bigModExp implements a native big integer exponential modular operation.
@@ -223,7 +263,12 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 	return gas.Uint64()
 }
 
-func (c *bigModExp) Run(input []byte) ([]byte, error) {
+func (c *bigModExp) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	var (
 		baseLen = new(big.Int).SetBytes(getData(input, 0, 32)).Uint64()
 		expLen  = new(big.Int).SetBytes(getData(input, 32, 32)).Uint64()
@@ -236,7 +281,7 @@ func (c *bigModExp) Run(input []byte) ([]byte, error) {
 	}
 	// Handle a special case when both the base and mod length is zero
 	if baseLen == 0 && modLen == 0 {
-		return []byte{}, nil
+		return []byte{}, gas, nil
 	}
 	// Retrieve the operands and execute the exponentiation
 	var (
@@ -246,9 +291,9 @@ func (c *bigModExp) Run(input []byte) ([]byte, error) {
 	)
 	if mod.BitLen() == 0 {
 		// Modulo 0 is undefined, return zero
-		return common.LeftPadBytes([]byte{}, int(modLen)), nil
+		return common.LeftPadBytes([]byte{}, int(modLen)), gas, nil
 	}
-	return common.LeftPadBytes(base.Exp(base, exp, mod).Bytes(), int(modLen)), nil
+	return common.LeftPadBytes(base.Exp(base, exp, mod).Bytes(), int(modLen)), gas, nil
 }
 
 // newCurvePoint unmarshals a binary blob into a bn256 elliptic curve point,
@@ -279,18 +324,23 @@ func (c *bn256Add) RequiredGas(input []byte) uint64 {
 	return params.Bn256AddGas
 }
 
-func (c *bn256Add) Run(input []byte) ([]byte, error) {
+func (c *bn256Add) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	x, err := newCurvePoint(getData(input, 0, 64))
 	if err != nil {
-		return nil, err
+		return nil, gas, err
 	}
 	y, err := newCurvePoint(getData(input, 64, 64))
 	if err != nil {
-		return nil, err
+		return nil, gas, err
 	}
 	res := new(bn256.G1)
 	res.Add(x, y)
-	return res.Marshal(), nil
+	return res.Marshal(), gas, nil
 }
 
 // bn256ScalarMul implements a native elliptic curve scalar multiplication.
@@ -301,14 +351,19 @@ func (c *bn256ScalarMul) RequiredGas(input []byte) uint64 {
 	return params.Bn256ScalarMulGas
 }
 
-func (c *bn256ScalarMul) Run(input []byte) ([]byte, error) {
+func (c *bn256ScalarMul) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	p, err := newCurvePoint(getData(input, 0, 64))
 	if err != nil {
-		return nil, err
+		return nil, gas, err
 	}
 	res := new(bn256.G1)
 	res.ScalarMult(p, new(big.Int).SetBytes(getData(input, 64, 32)))
-	return res.Marshal(), nil
+	return res.Marshal(), gas, nil
 }
 
 var (
@@ -330,10 +385,15 @@ func (c *bn256Pairing) RequiredGas(input []byte) uint64 {
 	return params.Bn256PairingBaseGas + uint64(len(input)/192)*params.Bn256PairingPerPointGas
 }
 
-func (c *bn256Pairing) Run(input []byte) ([]byte, error) {
+func (c *bn256Pairing) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
 	// Handle some corner cases cheaply
 	if len(input)%192 > 0 {
-		return nil, errBadPairingInput
+		return nil, gas, errBadPairingInput
 	}
 	// Convert the input into a set of coordinates
 	var (
@@ -343,18 +403,96 @@ func (c *bn256Pairing) Run(input []byte) ([]byte, error) {
 	for i := 0; i < len(input); i += 192 {
 		c, err := newCurvePoint(input[i : i+64])
 		if err != nil {
-			return nil, err
+			return nil, gas, err
 		}
 		t, err := newTwistPoint(input[i+64 : i+192])
 		if err != nil {
-			return nil, err
+			return nil, gas, err
 		}
 		cs = append(cs, c)
 		ts = append(ts, t)
 	}
 	// Execute the pairing checks and return the results
 	if bn256.PairingCheck(cs, ts) {
-		return true32Byte, nil
+		return true32Byte, gas, nil
 	}
-	return false32Byte, nil
+	return false32Byte, gas, nil
+}
+
+// Requesting verification in the Celo address based encryption  protocol is implemented as a
+// native contract.
+type requestVerification struct{}
+
+func (c *requestVerification) RequiredGas(input []byte) uint64 {
+	// TODO(asa): Charge less gas when the phone number is invalid.
+	return params.VerificationRequestGas
+}
+
+// Ensures that the input is parsable as a VerificationRequest.
+func (c *requestVerification) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
+	if caller != params.AuthorizedRequestVerificationAddress {
+		return nil, gas, fmt.Errorf("Unable to call requestVerification from unpermissioned address")
+	}
+	_, err = types.DecodeVerificationRequest(input)
+	if err != nil {
+		log.Error("[Celo] Unable to decode verification request", "err", err)
+		return nil, gas, err
+	} else {
+		return input, gas, nil
+	}
+}
+
+type getCoinbase struct{}
+
+func (c *getCoinbase) RequiredGas(input []byte) uint64 {
+	return params.GetCoinbaseGas
+}
+
+func (c *getCoinbase) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	gas, err := debitRequiredGas(c, input, gas)
+	if err != nil {
+		return nil, gas, err
+	}
+
+	var blockNumber, parsingSuccess = math.ParseBig256(hexutil.Encode(input[0:32]))
+
+	if !parsingSuccess {
+		return input, gas, fmt.Errorf("Error parsing block number:" + hexutil.Encode(input[0:32]))
+	}
+
+	var coinbase = evm.Context.GetCoinbase(blockNumber.Uint64())
+	return coinbase.Bytes(), gas, nil
+}
+
+// Native transfer contract to make Celo Gold ERC20 compatible.
+type transfer struct{}
+
+func (c *transfer) RequiredGas(input []byte) uint64 {
+	return params.TxGas
+}
+
+func (c *transfer) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
+	if caller != params.AuthorizedTransferAddress {
+		return nil, gas, fmt.Errorf("Unable to call transfer from unpermissioned address")
+	}
+	from := common.BytesToAddress(input[0:32])
+	to := common.BytesToAddress(input[32:64])
+	var parsed bool
+	value, parsed := math.ParseBig256(hexutil.Encode(input[64:96]))
+	if !parsed {
+		return nil, gas, fmt.Errorf("Error parsing transfer: unable to parse value from " + hexutil.Encode(input[64:96]))
+	}
+	// Fail if we're trying to transfer more than the available balance
+	if !evm.Context.CanTransfer(evm.StateDB, from, value) {
+		return nil, gas, ErrInsufficientBalance
+	}
+
+	gas, err := evm.TobinTransfer(evm.StateDB, from, to, gas, value)
+
+	return input, gas, err
 }

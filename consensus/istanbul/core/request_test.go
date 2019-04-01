@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
-	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
 )
 
 func TestCheckRequestMsg(t *testing.T) {
@@ -92,7 +92,7 @@ func TestStoreRequestMsg(t *testing.T) {
 			Sequence: big.NewInt(0),
 			Round:    big.NewInt(0),
 		}, newTestValidatorSet(4), common.Hash{}, nil, nil, nil),
-		pendingRequests:   prque.New(),
+		pendingRequests:   prque.New(nil),
 		pendingRequestsMu: new(sync.Mutex),
 	}
 	requests := []istanbul.Request{

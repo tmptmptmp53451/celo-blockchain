@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type testerVote struct {
@@ -334,20 +335,21 @@ func TestVoting(t *testing.T) {
 		genesis := &core.Genesis{
 			Difficulty: defaultDifficulty,
 			Mixhash:    types.IstanbulDigest,
+			Config:     params.TestChainConfig,
 		}
 		b := genesis.ToBlock(nil)
 		extra, _ := prepareExtra(b.Header(), validators)
 		genesis.ExtraData = extra
 		// Create a pristine blockchain with the genesis injected
-		db, _ := ethdb.NewMemDatabase()
+		db := ethdb.NewMemDatabase()
 		genesis.Commit(db)
 
 		config := istanbul.DefaultConfig
 		if tt.epoch != 0 {
 			config.Epoch = tt.epoch
 		}
-		engine := New(config, accounts.accounts[tt.validators[0]], db).(*backend)
-		chain, err := core.NewBlockChain(db, nil, genesis.Config, engine, vm.Config{})
+		engine := New(config, accounts.accounts[tt.validators[0]], db).(*Backend)
+		chain, err := core.NewBlockChain(db, nil, genesis.Config, engine, vm.Config{}, nil)
 
 		// Assemble a chain of headers from the cast votes
 		headers := make([]*types.Header, len(tt.votes))
@@ -410,24 +412,24 @@ func TestSaveAndLoad(t *testing.T) {
 		Hash:   common.HexToHash("1234567890"),
 		Votes: []*Vote{
 			{
-				Validator: common.StringToAddress("1234567891"),
+				Validator: common.BytesToAddress([]byte("1234567891")),
 				Block:     15,
-				Address:   common.StringToAddress("1234567892"),
+				Address:   common.BytesToAddress([]byte("1234567892")),
 				Authorize: false,
 			},
 		},
 		Tally: map[common.Address]Tally{
-			common.StringToAddress("1234567893"): {
+			common.BytesToAddress([]byte("1234567893")): {
 				Authorize: false,
 				Votes:     20,
 			},
 		},
 		ValSet: validator.NewSet([]common.Address{
-			common.StringToAddress("1234567894"),
-			common.StringToAddress("1234567895"),
+			common.BytesToAddress([]byte("1234567894")),
+			common.BytesToAddress([]byte("1234567895")),
 		}, istanbul.RoundRobin),
 	}
-	db, _ := ethdb.NewMemDatabase()
+	db := ethdb.NewMemDatabase()
 	err := snap.store(db)
 	if err != nil {
 		t.Errorf("store snapshot failed: %v", err)

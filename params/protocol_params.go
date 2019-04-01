@@ -16,10 +16,10 @@
 
 package params
 
-import "math/big"
+import (
+	"math/big"
 
-var (
-	TargetGasLimit uint64 = GenesisGasLimit // The artificial target
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -36,15 +36,26 @@ const (
 	TxGasContractCreation uint64 = 53000 // Per transaction that creates a contract. NOTE: Not payable on data of calls between transactions.
 	TxDataZeroGas         uint64 = 4     // Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
 	QuadCoeffDiv          uint64 = 512   // Divisor for the quadratic particle of the memory cost equation.
-	SstoreSetGas          uint64 = 20000 // Once per SLOAD operation.
 	LogDataGas            uint64 = 8     // Per byte in a LOG* operation's data.
 	CallStipend           uint64 = 2300  // Free gas given at beginning of call.
 
-	Sha3Gas          uint64 = 30    // Once per SHA3 operation.
-	Sha3WordGas      uint64 = 6     // Once per word of the SHA3 operation's data.
-	SstoreResetGas   uint64 = 5000  // Once per SSTORE operation if the zeroness changes from zero.
-	SstoreClearGas   uint64 = 5000  // Once per SSTORE operation if the zeroness doesn't change.
-	SstoreRefundGas  uint64 = 15000 // Once per SSTORE operation if the zeroness changes to zero.
+	Sha3Gas     uint64 = 30 // Once per SHA3 operation.
+	Sha3WordGas uint64 = 6  // Once per word of the SHA3 operation's data.
+
+	SstoreSetGas    uint64 = 20000 // Once per SLOAD operation.
+	SstoreResetGas  uint64 = 5000  // Once per SSTORE operation if the zeroness changes from zero.
+	SstoreClearGas  uint64 = 5000  // Once per SSTORE operation if the zeroness doesn't change.
+	SstoreRefundGas uint64 = 15000 // Once per SSTORE operation if the zeroness changes to zero.
+
+	NetSstoreNoopGas  uint64 = 200   // Once per SSTORE operation if the value doesn't change.
+	NetSstoreInitGas  uint64 = 20000 // Once per SSTORE operation from clean zero.
+	NetSstoreCleanGas uint64 = 5000  // Once per SSTORE operation from clean non-zero.
+	NetSstoreDirtyGas uint64 = 200   // Once per SSTORE operation from dirty.
+
+	NetSstoreClearRefund      uint64 = 15000 // Once per SSTORE operation for clearing an originally existing storage slot
+	NetSstoreResetRefund      uint64 = 4800  // Once per SSTORE operation for resetting to the original non-zero value
+	NetSstoreResetClearRefund uint64 = 19800 // Once per SSTORE operation for resetting to the original zero value
+
 	JumpdestGas      uint64 = 1     // Refunded gas, once per SSTORE operation if the zeroness changes to zero.
 	EpochDuration    uint64 = 30000 // Duration between proof-of-work epochs.
 	CallGas          uint64 = 40    // Once per CALL operation & message call transaction.
@@ -57,6 +68,7 @@ const (
 	TierStepGas      uint64 = 0     // Once per operation, for a selection of them.
 	LogTopicGas      uint64 = 375   // Multiplied by the * of the LOG*, per LOG transaction. e.g. LOG0 incurs 0 * c_txLogTopicGas, LOG4 incurs 4 * c_txLogTopicGas.
 	CreateGas        uint64 = 32000 // Once per CREATE operation & contract-creation transaction.
+	Create2Gas       uint64 = 32000 // Once per CREATE2 operation
 	SuicideRefundGas uint64 = 24000 // Refunded following a suicide operation.
 	MemoryGas        uint64 = 3     // Times the address of the (highest referenced byte in memory + 1). NOTE: referencing happens on read, write and in instructions such as RETURN and CALL.
 	TxDataNonZeroGas uint64 = 68    // Per byte of data attached to a transaction that is not equal to zero. NOTE: Not payable on data of calls between transactions.
@@ -77,6 +89,11 @@ const (
 	Bn256ScalarMulGas       uint64 = 40000  // Gas needed for an elliptic curve scalar multiplication
 	Bn256PairingBaseGas     uint64 = 100000 // Base price for an elliptic curve pairing check
 	Bn256PairingPerPointGas uint64 = 80000  // Per-point price for an elliptic curve pairing check
+
+	// Celo precompiled contracts
+	// TODO(asa): Figure out what the actual gas cost of this contract should be.
+	VerificationRequestGas uint64 = 3000 // Per-message price for sending an SMS. Not an accurate representation of the real cost of sending an SMS.
+	GetCoinbaseGas         uint64 = 20   // Equivalent to the cost of the BLOCKHASH op
 )
 
 var (
@@ -84,4 +101,10 @@ var (
 	GenesisDifficulty      = big.NewInt(131072) // Difficulty of the Genesis block.
 	MinimumDifficulty      = big.NewInt(131072) // The minimum that the difficulty may ever be.
 	DurationLimit          = big.NewInt(13)     // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
+)
+
+var (
+	AuthorizedTransferAddress            = common.HexToAddress("0x000000000000000000000000000000000000ce10") // Address of the contract authorized to call the transfer precompiled contract.
+	AuthorizedRequestVerificationAddress = common.HexToAddress("0x0000000000000000000000000000000000000ABE") // Address of the contract authorized to call the requestVerification precompiled contract.
+	ReserveAddress                       = common.HexToAddress("0x000000000000000000000000000000000000601d") // Address of the reserve proxy contract.
 )

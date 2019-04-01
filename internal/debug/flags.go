@@ -25,12 +25,15 @@ import (
 	"runtime"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/log/term"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/metrics/exp"
+	"github.com/fjl/memsize/memsizeui"
 	colorable "github.com/mattn/go-colorable"
+	"github.com/mattn/go-isatty"
 	"gopkg.in/urfave/cli.v1"
 )
+
+var Memsize memsizeui.Handler
 
 var (
 	verbosityFlag = cli.IntFlag{
@@ -83,6 +86,17 @@ var (
 		Name:  "trace",
 		Usage: "Write execution trace to the given file",
 	}
+	consoleFormatFlag = cli.StringFlag{
+		Name:  "consoleformat",
+		Usage: "Write console logs as 'json' or 'term'",
+	}
+	consoleOutputFlag = cli.StringFlag{
+		Name: "consoleoutput",
+		Usage: "(stderr|stdout|split) By default, console output goes to stderr. " +
+			"In stdout mode, write console logs to stdout (not stderr). " +
+			"In split mode, write critical(warning, error, and critical) console logs to stderr " +
+			"and non-critical (info, debug, and trace) to stdout",
+	}
 )
 
 // Flags holds all command-line flags required for debugging.
@@ -90,24 +104,68 @@ var Flags = []cli.Flag{
 	verbosityFlag, vmoduleFlag, backtraceAtFlag, debugFlag,
 	pprofFlag, pprofAddrFlag, pprofPortFlag,
 	memprofilerateFlag, blockprofilerateFlag, cpuprofileFlag, traceFlag,
+	consoleFormatFlag, consoleOutputFlag,
 }
 
-var glogger *log.GlogHandler
+var (
+	ostream log.Handler
+	glogger *log.GlogHandler
+)
+
+type StdoutStderrHandler struct {
+	stdoutHandler log.Handler
+	stderrHandler log.Handler
+}
+
+func (this StdoutStderrHandler) Log(r *log.Record) error {
+	switch r.Lvl {
+	case log.LvlCrit:
+		fallthrough
+	case log.LvlError:
+		fallthrough
+	case log.LvlWarn:
+		return this.stderrHandler.Log(r)
+
+	case log.LvlInfo:
+		fallthrough
+	case log.LvlDebug:
+		fallthrough
+	case log.LvlTrace:
+		return this.stdoutHandler.Log(r)
+
+	default:
+		return this.stdoutHandler.Log(r)
+	}
+}
 
 func init() {
-	usecolor := term.IsTty(os.Stderr.Fd()) && os.Getenv("TERM") != "dumb"
-	output := io.Writer(os.Stderr)
-	if usecolor {
-		output = colorable.NewColorableStderr()
-	}
-	glogger = log.NewGlogHandler(log.StreamHandler(output, log.TerminalFormat(usecolor)))
+	ostream = log.StreamHandler(io.Writer(os.Stderr), log.TerminalFormat(false))
+	glogger = log.NewGlogHandler(ostream)
 }
 
 // Setup initializes profiling and logging based on the CLI flags.
 // It should be called as early as possible in the program.
-func Setup(ctx *cli.Context) error {
+func Setup(ctx *cli.Context, logdir string) error {
 	// logging
+
+	consoleFormat := ctx.GlobalString(consoleFormatFlag.Name)
+	consoleOutputMode := ctx.GlobalString(consoleOutputFlag.Name)
+
+	ostream := CreateStreamHandler(consoleFormat, consoleOutputMode)
+	glogger = log.NewGlogHandler(ostream)
+
 	log.PrintOrigins(ctx.GlobalBool(debugFlag.Name))
+	if logdir != "" {
+		rfh, err := log.RotatingFileHandler(
+			logdir,
+			262144,
+			log.JSONFormatOrderedEx(false, true),
+		)
+		if err != nil {
+			return err
+		}
+		glogger.SetHandler(log.MultiHandler(ostream, rfh))
+	}
 	glogger.Verbosity(log.Lvl(ctx.GlobalInt(verbosityFlag.Name)))
 	glogger.Vmodule(ctx.GlobalString(vmoduleFlag.Name))
 	glogger.BacktraceAt(ctx.GlobalString(backtraceAtFlag.Name))
@@ -129,19 +187,88 @@ func Setup(ctx *cli.Context) error {
 
 	// pprof server
 	if ctx.GlobalBool(pprofFlag.Name) {
-		// Hook go-metrics into expvar on any /debug/metrics request, load all vars
-		// from the registry into expvar, and execute regular expvar handler.
-		exp.Exp(metrics.DefaultRegistry)
-
 		address := fmt.Sprintf("%s:%d", ctx.GlobalString(pprofAddrFlag.Name), ctx.GlobalInt(pprofPortFlag.Name))
-		go func() {
-			log.Info("Starting pprof server", "addr", fmt.Sprintf("http://%s/debug/pprof", address))
-			if err := http.ListenAndServe(address, nil); err != nil {
-				log.Error("Failure in running pprof server", "err", err)
-			}
-		}()
+		StartPProf(address)
 	}
 	return nil
+}
+
+func CreateStreamHandler(consoleFormat string, consoleOutputMode string) log.Handler {
+	if consoleOutputMode == "stdout" {
+		usecolor := useColor(os.Stdout)
+		var output io.Writer
+		if usecolor {
+			output = colorable.NewColorableStdout()
+		} else {
+			output = io.Writer(os.Stdout)
+		}
+		return log.StreamHandler(output, getConsoleLogFormat(consoleFormat, usecolor))
+	}
+
+	// This is the default mode to maintain backward-compatibility with the geth command-line
+	if consoleOutputMode == "stderr" || len(consoleOutputMode) == 0 {
+		usecolor := useColor(os.Stderr)
+		var output io.Writer
+		if usecolor {
+			output = colorable.NewColorableStderr()
+		} else {
+			output = io.Writer(os.Stderr)
+		}
+		return log.StreamHandler(output, getConsoleLogFormat(consoleFormat, usecolor))
+	}
+
+	if consoleOutputMode == "split" {
+		usecolorStdout := useColor(os.Stdout)
+		usecolorStderr := useColor(os.Stderr)
+
+		var outputStdout io.Writer
+		var outputStderr io.Writer
+
+		if usecolorStdout {
+			outputStdout = colorable.NewColorableStdout()
+		} else {
+			outputStdout = io.Writer(os.Stdout)
+		}
+
+		if usecolorStderr {
+			outputStderr = colorable.NewColorableStderr()
+		} else {
+			outputStderr = io.Writer(os.Stderr)
+		}
+
+		return StdoutStderrHandler{
+			stdoutHandler: log.StreamHandler(outputStdout, getConsoleLogFormat(consoleFormat, usecolorStdout)),
+			stderrHandler: log.StreamHandler(outputStderr, getConsoleLogFormat(consoleFormat, usecolorStderr))}
+	}
+
+	panic(fmt.Sprintf("Unexpected value for \"%s\" flag: \"%s\"", consoleOutputFlag.Name, consoleOutputMode))
+}
+
+func useColor(file *os.File) bool {
+	return (isatty.IsTerminal(file.Fd()) || isatty.IsCygwinTerminal(file.Fd())) && os.Getenv("TERM") != "dumb"
+}
+
+func getConsoleLogFormat(consoleFormat string, usecolor bool) log.Format {
+	if consoleFormat == "json" {
+		return log.JSONFormat()
+	}
+	if consoleFormat == "term" || len(consoleFormat) == 0 /* No explicit format specified */ {
+		return log.TerminalFormat(usecolor)
+	}
+	panic(fmt.Sprintf("Unexpected value for \"%s\" flag: \"%s\"", consoleFormatFlag.Name, consoleFormat))
+}
+
+func StartPProf(address string) {
+	// Hook go-metrics into expvar on any /debug/metrics request, load all vars
+	// from the registry into expvar, and execute regular expvar handler.
+	exp.Exp(metrics.DefaultRegistry)
+	http.Handle("/memsize/", http.StripPrefix("/memsize", &Memsize))
+	log.Info("Starting pprof server", "addr", fmt.Sprintf("http://%s/debug/pprof", address))
+	go func() {
+		if err := http.ListenAndServe(address, nil); err != nil {
+			log.Error("Failure in running pprof server", "err", err)
+		}
+	}()
 }
 
 // Exit stops all running profiles, flushing their output to the
