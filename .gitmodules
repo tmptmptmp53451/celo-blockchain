@@ -1,3 +1,6 @@
 [submodule "tests"]
 	path = tests/testdata
 	url = https://github.com/ethereum/tests
+[submodule "celo-monorepo"]
+	path = celo-monorepo
+	url = git@github.com:celo-org/celo-monorepo.git
