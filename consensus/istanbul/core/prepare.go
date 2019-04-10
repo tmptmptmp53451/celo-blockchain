@@ -26,6 +26,7 @@ func (c *core) sendPrepare() {
 	logger := c.logger.New("state", c.state)
 
 	sub := c.current.Subject()
+	logger.Warn("sendPrepare", "round", c.current.Round(), "sequence", c.current.Sequence())
 	encodedSubject, err := Encode(sub)
 	if err != nil {
 		logger.Error("Failed to encode", "subject", sub)
@@ -44,6 +45,8 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	if err != nil {
 		return errFailedDecodePrepare
 	}
+
+	c.logger.Warn("handlePrepare", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64())
 
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
 		return err

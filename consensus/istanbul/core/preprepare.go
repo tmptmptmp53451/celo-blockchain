@@ -25,7 +25,7 @@ import (
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
 	logger := c.logger.New("state", c.state)
-
+	logger.Warn("sendPreprepare", "proposal", request.Proposal.Number())
 	// If I'm the proposer and I have the same sequence with the proposal
 	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer() {
 		curView := c.currentView()
@@ -54,6 +54,8 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 	if err != nil {
 		return errFailedDecodePreprepare
 	}
+
+	logger.Warn("handlePrePrepare", "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64())
 
 	// Ensure we have the same view with the PRE-PREPARE message
 	// If it is old message, see if we need to broadcast COMMIT
