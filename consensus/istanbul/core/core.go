@@ -39,7 +39,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		address:            backend.Address(),
 		state:              StateAcceptRequest,
 		handlerWg:          new(sync.WaitGroup),
-		logger:             log.New("address", backend.Address()),
+		logger:             log.New("address", backend.Address(), "i", true),
 		backend:            backend,
 		backlogs:           make(map[istanbul.Validator]*prque.Prque),
 		backlogsMu:         new(sync.Mutex),
