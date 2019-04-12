@@ -46,7 +46,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePrepare
 	}
 
-	c.logger.Warn("handlePrepare", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64())
+	c.logger.Warn("handlePrepare", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64(), "hash", c.current.Subject().Digest)
 
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
 		return err

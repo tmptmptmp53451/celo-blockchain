@@ -25,7 +25,7 @@ import (
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
 	logger := c.logger.New("state", c.state)
-	logger.Warn("sendPreprepare", "proposal", request.Proposal.Number())
+	logger.Warn("sendPreprepare", "proposal", request.Proposal.Number(), "hash", request.proposal.Hash())
 	// If I'm the proposer and I have the same sequence with the proposal
 	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer() {
 		curView := c.currentView()
@@ -55,7 +55,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePreprepare
 	}
 
-	logger.Warn("handlePrePrepare", "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64())
+	logger.Warn("handlePrePrepare", "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64(), "hash", preprepare.Proposal.Hash())
 
 	// Ensure we have the same view with the PRE-PREPARE message
 	// If it is old message, see if we need to broadcast COMMIT
@@ -69,6 +69,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 			// 1. The proposer needs to be a proposer matches the given (Sequence + Round)
 			// 2. The given block must exist
 			if valSet.IsProposer(src.Address()) && c.backend.HasProposal(preprepare.Proposal.Hash(), preprepare.Proposal.Number()) {
+				logger.Warn("Wrong proposer for oldBlock", "proposer", src.Address(), "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64(), "isProposer", valSet.IsProposer(src.Address()), "hasProposal", c.backend.HasProposal(preprepare.Proposal.Hash(), preprepare.Proposal.Number()))
 				c.sendCommitForOldBlock(preprepare.View, preprepare.Proposal.Hash())
 				return nil
 			}
