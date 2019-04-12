@@ -58,7 +58,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return errFailedDecodeCommit
 	}
 
-	c.logger.Warn("handleCommit", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64())
+	c.logger.Warn("handleCommit", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64(), "from", src.Address())
 
 	if err := c.checkMessage(msgCommit, commit.View); err != nil {
 		return err

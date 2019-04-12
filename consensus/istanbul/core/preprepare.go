@@ -55,11 +55,12 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePreprepare
 	}
 
-	logger.Warn("handlePrePrepare", "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64(), "hash", preprepare.Proposal.Hash())
+	logger.Warn("handlePrePrepare", "round", preprepare.View.Round.Uint64(), "sequence", preprepare.View.Sequence.Uint64(), "hash", preprepare.Proposal.Hash(), "proposal", preprepare.View.Sequence.Uint64(), "from", src.Address())
 
 	// Ensure we have the same view with the PRE-PREPARE message
 	// If it is old message, see if we need to broadcast COMMIT
 	if err := c.checkMessage(msgPreprepare, preprepare.View); err != nil {
+		logger.Warn("handlePrepreare Wrong View", "hash", preprepare.Proposal.Hash(), "proposal", preprepare.View.Sequence.Uint64())
 		if err == errOldMessage {
 			// Get validator set for the given proposal
 			valSet := c.backend.ParentValidators(preprepare.Proposal).Copy()
