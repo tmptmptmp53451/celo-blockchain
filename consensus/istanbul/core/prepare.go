@@ -49,6 +49,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	c.logger.Warn("handlePrepare")
 
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
+		c.logger.Warn("handlePrepare checkMessage", "err", err)
 		return err
 	}
 
