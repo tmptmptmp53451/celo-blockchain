@@ -69,20 +69,22 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
-	c.logger.Warn("handleCommit accept", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64(), "from", src.Address())
+	go func() {
+		c.logger.Warn("handleCommit accept", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64(), "from", src.Address())
 
-	c.acceptCommit(msg, src)
+		c.acceptCommit(msg, src)
 
-	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
-	//
-	// If we already have a proposal, we may have chance to speed up the consensus process
-	// by committing the proposal without PREPARE messages.
-	if c.current.Commits.Size() > 2*c.valSet.F() && c.state.Cmp(StateCommitted) < 0 {
-		c.logger.Warn("handCommit above threshold", "round", c.current.Round(), "sequeunce", c.current.Sequence())
-		// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
-		c.current.LockHash()
-		c.commit()
-	}
+		// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
+		//
+		// If we already have a proposal, we may have chance to speed up the consensus process
+		// by committing the proposal without PREPARE messages.
+		if c.current.Commits.Size() > 2*c.valSet.F() && c.state.Cmp(StateCommitted) < 0 {
+			c.logger.Warn("handCommit above threshold", "round", c.current.Round(), "sequeunce", c.current.Sequence())
+			// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
+			c.current.LockHash()
+			c.commit()
+		}
+	}()
 
 	return nil
 }
