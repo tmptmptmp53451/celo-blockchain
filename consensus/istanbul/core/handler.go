@@ -96,9 +96,11 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				if err := c.handleMsg(ev.Payload); err == nil {
-					c.backend.Gossip(c.valSet, ev.Payload)
-				}
+				go func() {
+					if err := c.handleMsg(ev.Payload); err == nil {
+						c.backend.Gossip(c.valSet, ev.Payload)
+					}
+				}()
 			case backlogEvent:
 				// No need to check signature for internal messages
 				if err := c.handleCheckedMsg(ev.msg, ev.src); err == nil {
