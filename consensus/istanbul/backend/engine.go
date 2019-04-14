@@ -363,9 +363,9 @@ func (sb *Backend) Prepare(chain consensus.ChainReader, header *types.Header) er
 
 	// set header's timestamp
 	header.Time = new(big.Int).Add(parent.Time, new(big.Int).SetUint64(sb.config.BlockPeriod))
-	// if header.Time.Int64() < time.Now().Unix() {
-	// 	header.Time = big.NewInt(time.Now().Unix())
-	// }
+	if header.Time.Int64() < time.Now().Unix() {
+		header.Time = big.NewInt(time.Now().Unix())
+	}
 	return nil
 }
 
@@ -410,12 +410,12 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 	}
 
 	// wait for the timestamp of header, use this to adjust the block period
-	delay := time.Unix(block.Header().Time.Int64(), 0).Sub(now())
-	select {
-	case <-time.After(delay):
-	case <-stop:
-		return nil
-	}
+	// delay := time.Unix(block.Header().Time.Int64(), 0).Sub(now())
+	// select {
+	// case <-time.After(delay):
+	// case <-stop:
+	// 	return nil
+	// }
 
 	// get the proposed block hash and clear it if the seal() is completed.
 	sb.sealMu.Lock()
