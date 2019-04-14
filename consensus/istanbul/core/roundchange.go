@@ -92,7 +92,7 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
-	logger.Warn("handleRoundChange", "waiting", c.waitingForRoundChange, "num", num)
+	logger.Warn("handleRoundChange", "waiting", c.waitingForRoundChange, "num", num, "round", roundView.Round)
 
 	// Once we received f+1 ROUND CHANGE messages, those messages form a weak certificate.
 	// If our round number is smaller than the certificate's round number, we would
