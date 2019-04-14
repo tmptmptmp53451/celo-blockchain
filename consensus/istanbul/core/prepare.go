@@ -46,6 +46,8 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePrepare
 	}
 
+	c.logger.Warn("handlePrepare")
+
 	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	c.acceptPrepare(msg, src)
 
-	c.logger.Warn("handlePrepare", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64(), "hash", c.current.Subject().Digest, "from", src.Address())
+	c.logger.Warn("handlePrepare accept", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64(), "hash", c.current.Subject().Digest, "from", src.Address())
 
 	// Change to Prepared state if we've received enough PREPARE messages or it is locked
 	// and we are in earlier state before Prepared state.
