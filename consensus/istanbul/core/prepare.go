@@ -59,20 +59,18 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
-	go func() {
-		c.acceptPrepare(msg, src)
+	c.acceptPrepare(msg, src)
 
-		c.logger.Warn("handlePrepare accept", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64(), "hash", prepare.Digest, "from", src.Address())
+	c.logger.Warn("handlePrepare accept", "round", prepare.View.Round.Uint64(), "sequence", prepare.View.Sequence.Uint64(), "hash", prepare.Digest, "from", src.Address())
 
-		// Change to Prepared state if we've received enough PREPARE messages or it is locked
-		// and we are in earlier state before Prepared state.
-		if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
-			c.state.Cmp(StatePrepared) < 0 {
-			c.current.LockHash()
-			c.setState(StatePrepared)
-			c.sendCommit()
-		}
-	}()
+	// Change to Prepared state if we've received enough PREPARE messages or it is locked
+	// and we are in earlier state before Prepared state.
+	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
+		c.state.Cmp(StatePrepared) < 0 {
+		c.current.LockHash()
+		c.setState(StatePrepared)
+		c.sendCommit()
+	}
 
 	return nil
 }
