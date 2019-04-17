@@ -69,9 +69,8 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
-	c.logger.Warn("handleCommit accept", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64(), "from", src.Address())
-
 	c.acceptCommit(msg, src)
+	c.logger.Warn("handleCommit accept", "round", commit.View.Round.Uint64(), "sequence", commit.View.Sequence.Uint64(), "from", src.Address(), "quorum", c.current.Commits.Size())
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
