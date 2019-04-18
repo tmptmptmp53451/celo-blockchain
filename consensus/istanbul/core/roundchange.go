@@ -19,6 +19,7 @@ package core
 import (
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
@@ -58,7 +59,11 @@ func (c *core) sendRoundChange(round *big.Int) {
 		logger.Error("Failed to encode ROUND CHANGE", "rc", rc, "err", err)
 		return
 	}
+	if !c.consensusTimestamp.IsZero() {
+		c.roundChangeTimerr.UpdateSince(c.consensusTimestamp)
+	}
 
+	c.roundChangeTimestamp = time.Now()
 	c.broadcast(&message{
 		Code: msgRoundChange,
 		Msg:  payload,
@@ -90,6 +95,9 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
+	if !c.roundChangeTimestamp.IsZero() {
+		c.roundChangeTimers[num].UpdateSince(c.roundChangeTimestamp)
+	}
 	// Once we received f+1 ROUND CHANGE messages, those messages form a weak certificate.
 	// If our round number is smaller than the certificate's round number, we would
 	// try to catch up the round number.

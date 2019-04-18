@@ -18,6 +18,7 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"math/big"
 	"sync"
@@ -35,23 +36,40 @@ import (
 // New creates an Istanbul consensus core
 func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 	c := &core{
-		config:             config,
-		address:            backend.Address(),
-		state:              StateAcceptRequest,
-		handlerWg:          new(sync.WaitGroup),
-		logger:             log.New("address", backend.Address()),
-		backend:            backend,
-		backlogs:           make(map[istanbul.Validator]*prque.Prque),
-		backlogsMu:         new(sync.Mutex),
-		pendingRequests:    prque.New(nil),
-		pendingRequestsMu:  new(sync.Mutex),
-		consensusTimestamp: time.Time{},
-		roundMeter:         metrics.NewRegisteredMeter("consensus/istanbul/core/round", nil),
-		sequenceMeter:      metrics.NewRegisteredMeter("consensus/istanbul/core/sequence", nil),
-		consensusTimer:     metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
+		config:               config,
+		address:              backend.Address(),
+		state:                StateAcceptRequest,
+		handlerWg:            new(sync.WaitGroup),
+		logger:               log.New("address", backend.Address()),
+		backend:              backend,
+		backlogs:             make(map[istanbul.Validator]*prque.Prque),
+		backlogsMu:           new(sync.Mutex),
+		pendingRequests:      prque.New(nil),
+		pendingRequestsMu:    new(sync.Mutex),
+		consensusTimestamp:   time.Time{},
+		roundChangeTimestamp: time.Time{},
+		roundMeter:           metrics.NewRegisteredMeter("consensus/istanbul/core/round", nil),
+		sequenceMeter:        metrics.NewRegisteredMeter("consensus/istanbul/core/sequence", nil),
+		consensusTimer:       metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
+		prepareTimers:        newArrayOfTimers("consensus/istanbul/core/prepare", 51),
+		commitTimers:         newArrayOfTimers("consensus/istanbul/core/commit", 51),
+		roundChangeTimers:    newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
+		roundChangeTimerr:    metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
+
+		prepareTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
+		commitTimer:  metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
 	}
+
 	c.validateFn = c.checkValidatorSignature
 	return c
+}
+
+func newArrayOfTimers(prefix string, count int) []metrics.Timer {
+	timers := make([]metrics.Timer, count)
+	for i := 0; i < 50; i++ {
+		timers[i] = metrics.NewRegisteredTimer(fmt.Sprintf("%s%d", prefix, i), nil)
+	}
+	return timers
 }
 
 // ----------------------------------------------------------------------------
@@ -84,13 +102,21 @@ type core struct {
 	pendingRequests   *prque.Prque
 	pendingRequestsMu *sync.Mutex
 
-	consensusTimestamp time.Time
+	consensusTimestamp   time.Time
+	roundChangeTimestamp time.Time
 	// the meter to record the round change rate
 	roundMeter metrics.Meter
 	// the meter to record the sequence update rate
 	sequenceMeter metrics.Meter
 	// the timer to record consensus duration (from accepting a preprepare to final committed stage)
-	consensusTimer metrics.Timer
+	consensusTimer    metrics.Timer
+	prepareTimer      metrics.Timer
+	commitTimer       metrics.Timer
+	roundChangeTimerr metrics.Timer
+
+	prepareTimers     []metrics.Timer
+	commitTimers      []metrics.Timer
+	roundChangeTimers []metrics.Timer
 }
 
 func (c *core) finalizeMessage(msg *message) ([]byte, error) {

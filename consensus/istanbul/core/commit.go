@@ -44,6 +44,9 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
+	if !c.consensusTimestamp.IsZero() {
+		c.commitTimer.UpdateSince(c.consensusTimestamp)
+	}
 	c.broadcast(&message{
 		Code: msgCommit,
 		Msg:  encodedSubject,
@@ -67,7 +70,10 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	}
 
 	c.acceptCommit(msg, src)
-
+	if !c.consensusTimestamp.IsZero() {
+		commitSize := c.current.Commits.Size()
+		c.commitTimers[commitSize].UpdateSince(c.consensusTimestamp)
+	}
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
 	// If we already have a proposal, we may have chance to speed up the consensus process

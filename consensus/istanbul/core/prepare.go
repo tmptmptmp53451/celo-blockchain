@@ -31,6 +31,11 @@ func (c *core) sendPrepare() {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
+
+	if !c.consensusTimestamp.IsZero() {
+		c.prepareTimer.UpdateSince(c.consensusTimestamp)
+	}
+
 	c.broadcast(&message{
 		Code: msgPrepare,
 		Msg:  encodedSubject,
@@ -57,6 +62,10 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	c.acceptPrepare(msg, src)
 
+	if !c.consensusTimestamp.IsZero() {
+		prepareSize := c.current.GetPrepareOrCommitSize()
+		c.prepareTimers[prepareSize].UpdateSince(c.consensusTimestamp)
+	}
 	// Change to Prepared state if we've received enough PREPARE messages or it is locked
 	// and we are in earlier state before Prepared state.
 	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
