@@ -103,7 +103,7 @@ func (c *core) handleEvents() {
 				}
 
 				if err := c.handleMsg(ev.Payload, ev.ReceivedAt); err == nil {
-					c.backend.Gossip(c.valSet, ev.Payload)
+					go c.backend.Gossip(c.valSet, ev.Payload)
 				}
 			case backlogEvent:
 				// No need to check signature for internal messages
