@@ -117,7 +117,7 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 			//   2. we have no locked proposal
 			c.acceptPreprepare(preprepare)
 			c.setState(StatePreprepared)
-			go c.sendPrepare()
+			c.sendPrepare()
 		}
 	}
 

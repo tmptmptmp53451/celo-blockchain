@@ -46,7 +46,14 @@ func (sb *Backend) Protocol() consensus.Protocol {
 
 // HandleMsg implements consensus.Handler.HandleMsg
 func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
+	if !msg.ReceivedAt.IsZero() {
+		sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
+	}
 	sb.coreMu.Lock()
+
+	if !msg.ReceivedAt.IsZero() {
+		sb.istanbulMsgLockAcquiredTimer.UpdateSince(msg.ReceivedAt)
+	}
 	defer sb.coreMu.Unlock()
 
 	if msg.Code == istanbulMsg {
@@ -77,6 +84,10 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 			return true, nil
 		}
 		sb.knownMessages.Add(hash, true)
+
+		if !msg.ReceivedAt.IsZero() {
+			sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)
+		}
 
 		go sb.istanbulEventMux.Post(istanbul.MessageEvent{
 			Payload:    data,

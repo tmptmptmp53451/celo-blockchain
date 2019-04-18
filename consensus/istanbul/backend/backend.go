@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -60,6 +61,10 @@ func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 		coreStarted:      false,
 		recentMessages:   recentMessages,
 		knownMessages:    knownMessages,
+
+		istanbulMsgWaitForLockTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgWaitForLock", nil),
+		istanbulMsgLockAcquiredTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgLockAcquired", nil),
+		istanbulMsgPuttingInQueueTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgPuttingInQueue", nil),
 	}
 	backend.core = istanbulCore.New(backend, backend.config)
 	return backend
@@ -98,6 +103,10 @@ type Backend struct {
 
 	recentMessages *lru.ARCCache // the cache of peer's messages
 	knownMessages  *lru.ARCCache // the cache of self messages
+
+	istanbulMsgWaitForLockTimer    metrics.Timer
+	istanbulMsgLockAcquiredTimer   metrics.Timer
+	istanbulMsgPuttingInQueueTimer metrics.Timer
 }
 
 // Address implements istanbul.Backend.Address
