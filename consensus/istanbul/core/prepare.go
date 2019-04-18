@@ -72,7 +72,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		c.state.Cmp(StatePrepared) < 0 {
 		c.current.LockHash()
 		c.setState(StatePrepared)
-		c.sendCommit()
+		go c.sendCommit()
 	}
 
 	return nil
