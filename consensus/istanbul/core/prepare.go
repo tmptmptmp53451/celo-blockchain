@@ -32,7 +32,7 @@ func (c *core) sendPrepare() {
 		return
 	}
 
-	if !c.consensusTimestamp.IsZero() {
+	if !c.consensusTimestamp.IsZero() && c.isProposer() {
 		c.prepareTimer.UpdateSince(c.consensusTimestamp)
 	}
 
@@ -62,7 +62,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	c.acceptPrepare(msg, src)
 
-	if !c.consensusTimestamp.IsZero() {
+	if !c.consensusTimestamp.IsZero() && c.isProposer() {
 		prepareSize := c.current.GetPrepareOrCommitSize()
 		c.prepareTimers[prepareSize].UpdateSince(c.consensusTimestamp)
 	}

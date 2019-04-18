@@ -98,6 +98,10 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
+				if ev.ReceivedAt.IsZero() {
+					c.istanbulMsgQueueingTimer.UpdateSince(ev.ReceivedAt)
+				}
+
 				if err := c.handleMsg(ev.Payload, ev.ReceivedAt); err == nil {
 					c.backend.Gossip(c.valSet, ev.Payload)
 				}

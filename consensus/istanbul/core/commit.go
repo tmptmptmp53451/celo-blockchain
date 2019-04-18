@@ -44,7 +44,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	if !c.consensusTimestamp.IsZero() {
+	if !c.consensusTimestamp.IsZero() && c.isProposer() {
 		c.commitTimer.UpdateSince(c.consensusTimestamp)
 	}
 	c.broadcast(&message{
@@ -70,7 +70,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	}
 
 	c.acceptCommit(msg, src)
-	if !c.consensusTimestamp.IsZero() {
+	if !c.consensusTimestamp.IsZero() && c.isProposer() {
 		commitSize := c.current.Commits.Size()
 		c.commitTimers[commitSize].UpdateSince(c.consensusTimestamp)
 	}

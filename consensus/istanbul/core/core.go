@@ -59,6 +59,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		prepareTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
 		commitTimer:  metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
 
+		istanbulMsgQueueingTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgQueueing", nil),
 		istanbulMsgProcessingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
 	}
 
@@ -115,6 +116,7 @@ type core struct {
 	prepareTimer               metrics.Timer
 	commitTimer                metrics.Timer
 	roundChangeTimerr          metrics.Timer
+	istanbulMsgQueueingTimer   metrics.Timer
 	istanbulMsgProcessingTimer metrics.Timer
 
 	prepareTimers     []metrics.Timer
