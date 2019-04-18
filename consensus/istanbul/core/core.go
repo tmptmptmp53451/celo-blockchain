@@ -58,6 +58,8 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 		prepareTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
 		commitTimer:  metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
+
+		istanbulMsgProcessingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
 	}
 
 	c.validateFn = c.checkValidatorSignature
@@ -109,10 +111,11 @@ type core struct {
 	// the meter to record the sequence update rate
 	sequenceMeter metrics.Meter
 	// the timer to record consensus duration (from accepting a preprepare to final committed stage)
-	consensusTimer    metrics.Timer
-	prepareTimer      metrics.Timer
-	commitTimer       metrics.Timer
-	roundChangeTimerr metrics.Timer
+	consensusTimer             metrics.Timer
+	prepareTimer               metrics.Timer
+	commitTimer                metrics.Timer
+	roundChangeTimerr          metrics.Timer
+	istanbulMsgProcessingTimer metrics.Timer
 
 	prepareTimers     []metrics.Timer
 	commitTimers      []metrics.Timer

@@ -79,7 +79,8 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		sb.knownMessages.Add(hash, true)
 
 		go sb.istanbulEventMux.Post(istanbul.MessageEvent{
-			Payload: data,
+			Payload:    data,
+			ReceivedAt: msg.ReceivedAt,
 		})
 
 		return true, nil

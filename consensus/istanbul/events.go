@@ -16,6 +16,8 @@
 
 package istanbul
 
+import "time"
+
 // RequestEvent is posted to propose a proposal
 type RequestEvent struct {
 	Proposal Proposal
@@ -23,7 +25,8 @@ type RequestEvent struct {
 
 // MessageEvent is posted for Istanbul engine communication
 type MessageEvent struct {
-	Payload []byte
+	Payload    []byte
+	ReceivedAt time.Time
 }
 
 // FinalCommittedEvent is posted when a proposal is committed

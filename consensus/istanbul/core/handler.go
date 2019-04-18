@@ -17,6 +17,8 @@
 package core
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 )
@@ -96,7 +98,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				if err := c.handleMsg(ev.Payload); err == nil {
+				if err := c.handleMsg(ev.Payload, ev.ReceivedAt); err == nil {
 					c.backend.Gossip(c.valSet, ev.Payload)
 				}
 			case backlogEvent:
@@ -132,7 +134,7 @@ func (c *core) sendEvent(ev interface{}) {
 	c.backend.EventMux().Post(ev)
 }
 
-func (c *core) handleMsg(payload []byte) error {
+func (c *core) handleMsg(payload []byte, receivedAt time.Time) error {
 	logger := c.logger.New()
 
 	// Decode message and check its signature
@@ -149,7 +151,11 @@ func (c *core) handleMsg(payload []byte) error {
 		return istanbul.ErrUnauthorizedAddress
 	}
 
-	return c.handleCheckedMsg(msg, src)
+	err := c.handleCheckedMsg(msg, src)
+	if !receivedAt.IsZero() {
+		c.istanbulMsgProcessingTimer.UpdateSince(receivedAt)
+	}
+	return err
 }
 
 func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
