@@ -98,7 +98,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				if ev.ReceivedAt.IsZero() {
+				if !ev.ReceivedAt.IsZero() {
 					c.istanbulMsgQueueingTimer.UpdateSince(ev.ReceivedAt)
 				}
 
