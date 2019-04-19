@@ -86,7 +86,7 @@ func (c *core) handleEvents() {
 		select {
 
 		case event, ok := <-c.events.Chan():
-
+			c.queueMeter.Mark(int64(len(c.events.Chan())))
 			if !ok {
 				return
 			}
@@ -107,8 +107,14 @@ func (c *core) handleEvents() {
 					c.istanbulMsgQueueingTimer.UpdateSince(ev.ReceivedAt)
 				}
 
-				if err := c.handleMsg(ev.Payload, ev.ReceivedAt); err == nil {
-					go c.backend.Gossip(c.valSet, ev.Payload)
+				if err := c.handleMsg(ev.Payload); err == nil {
+					if !ev.ReceivedAt.IsZero() {
+						c.istanbulMsgProcessingTimer.UpdateSince(ev.ReceivedAt)
+					}
+					c.backend.Gossip(c.valSet, ev.Payload)
+					if !ev.ReceivedAt.IsZero() {
+						c.istanbulMsgPostGossipTimer.UpdateSince(ev.ReceivedAt)
+					}
 				}
 			case backlogEvent:
 				c.internalMeter.Mark(1)
@@ -147,7 +153,7 @@ func (c *core) sendEvent(ev interface{}) {
 	c.backend.EventMux().Post(ev)
 }
 
-func (c *core) handleMsg(payload []byte, receivedAt time.Time) error {
+func (c *core) handleMsg(payload []byte) error {
 	logger := c.logger.New()
 
 	// Decode message and check its signature
@@ -165,9 +171,6 @@ func (c *core) handleMsg(payload []byte, receivedAt time.Time) error {
 	}
 
 	err := c.handleCheckedMsg(msg, src)
-	if !receivedAt.IsZero() {
-		c.istanbulMsgProcessingTimer.UpdateSince(receivedAt)
-	}
 	return err
 }
 
