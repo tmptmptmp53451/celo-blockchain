@@ -103,6 +103,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
+				startP := time.Now()
 				c.messageMeter.Mark(1)
 				if !ev.ReceivedAt.IsZero() {
 					c.istanbulMsgQueueingTimer.UpdateSince(ev.ReceivedAt)
@@ -112,11 +113,12 @@ func (c *core) handleEvents() {
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgProcessingTimer.UpdateSince(ev.ReceivedAt)
 					}
-					c.backend.Gossip(c.valSet, ev.Payload)
+					go c.backend.Gossip(c.valSet, ev.Payload)
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgPostGossipTimer.UpdateSince(ev.ReceivedAt)
 					}
 				}
+				c.processingTimer.UpdateSince(startP)
 			case backlogEvent:
 				c.internalMeter.Mark(1)
 				// No need to check signature for internal messages
