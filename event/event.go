@@ -104,6 +104,25 @@ func (mux *TypeMux) Post(ev interface{}) error {
 	return nil
 }
 
+func (mux *TypeMux) PostWOLock(ev interface{}) error {
+	start := time.Now()
+	event := &TypeMuxEvent{
+		Time: time.Now(),
+		Data: ev,
+	}
+	rtyp := reflect.TypeOf(ev)
+	if mux.stopped {
+		mux.mutex.RUnlock()
+		return ErrMuxClosed
+	}
+	subs := mux.subm[rtyp]
+	for _, sub := range subs {
+		sub.deliverWOLock(event)
+	}
+	mutexPostTimer.UpdateSince(start)
+	return nil
+}
+
 // Stop closes a mux. The mux can no longer be used.
 // Future Post calls will fail with ErrMuxClosed.
 // Stop blocks until all current deliveries have finished.
@@ -215,6 +234,18 @@ func (s *TypeMuxSubscription) deliver(event *TypeMuxEvent) {
 	s.postMu.RLock()
 	defer s.postMu.RUnlock()
 
+	select {
+	case s.postC <- event:
+	case <-s.closing:
+	}
+}
+
+func (s *TypeMuxSubscription) deliverWOLock(event *TypeMuxEvent) {
+	// Short circuit delivery if stale event
+	if s.created.After(event.Time) {
+		return
+	}
+	// Otherwise deliver the event
 	select {
 	case s.postC <- event:
 	case <-s.closing:

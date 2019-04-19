@@ -89,7 +89,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 			sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)
 		}
 
-		go sb.istanbulEventMux.Post(istanbul.MessageEvent{
+		go sb.istanbulEventMux.PostWOLock(istanbul.MessageEvent{
 			Payload:    data,
 			ReceivedAt: msg.ReceivedAt,
 		})
