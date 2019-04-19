@@ -45,7 +45,7 @@ func (sb *Backend) Protocol() consensus.Protocol {
 }
 
 // HandleMsg implements consensus.Handler.HandleMsg
-func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error)
+func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 
 	if msg.Code == istanbulMsg {
 

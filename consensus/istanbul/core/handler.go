@@ -195,20 +195,18 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator, receivedAt
 		return err
 	}
 
+	start := time.Now()
+
 	switch msg.Code {
 	case msgPreprepare:
 		return testBacklog(c.handlePreprepare(msg, src))
 	case msgPrepare:
 		err := testBacklog(c.handlePrepare(msg, src))
-		if !receivedAt.IsZero() {
-			c.prepareTimer.UpdateSince(receivedAt)
-		}
+		c.prepareTimer.UpdateSince(start)
 		return err
 	case msgCommit:
 		err := testBacklog(c.handleCommit(msg, src))
-		if !receivedAt.IsZero() {
-			c.commitTimer.UpdateSince(receivedAt)
-		}
+		c.commitTimer.UpdateSince(start)
 		return err
 	case msgRoundChange:
 		return testBacklog(c.handleRoundChange(msg, src))
