@@ -51,6 +51,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		roundMeter:           metrics.NewRegisteredMeter("consensus/istanbul/core/round", nil),
 		sequenceMeter:        metrics.NewRegisteredMeter("consensus/istanbul/core/sequence", nil),
 
+		requestMeter:  metrics.NewRegisteredMeter("consensus/istanbul/core/request", nil),
 		messageMeter:  metrics.NewRegisteredMeter("consensus/istanbul/core/message", nil),
 		internalMeter: metrics.NewRegisteredMeter("consensus/istanbul/core/internal", nil),
 
@@ -62,6 +63,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 		prepareTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
 		commitTimer:  metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
+		loopTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/loopTimer", nil),
 
 		istanbulMsgQueueingTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgQueueing", nil),
 		istanbulMsgProcessingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
@@ -116,6 +118,7 @@ type core struct {
 	// the meter to record the sequence update rate
 	sequenceMeter metrics.Meter
 
+	requestMeter  metrics.Meter
 	messageMeter  metrics.Meter
 	internalMeter metrics.Meter
 
@@ -126,6 +129,8 @@ type core struct {
 	roundChangeTimerr          metrics.Timer
 	istanbulMsgQueueingTimer   metrics.Timer
 	istanbulMsgProcessingTimer metrics.Timer
+
+	loopTimer metrics.Timer
 
 	prepareTimers     []metrics.Timer
 	commitTimers      []metrics.Timer

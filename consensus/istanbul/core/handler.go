@@ -82,14 +82,18 @@ func (c *core) handleEvents() {
 	c.handlerWg.Add(1)
 
 	for {
+		start := time.Now()
 		select {
+
 		case event, ok := <-c.events.Chan():
+
 			if !ok {
 				return
 			}
 			// A real event arrived, process interesting content
 			switch ev := event.Data.(type) {
 			case istanbul.RequestEvent:
+				c.requestMeter.Mark(1)
 				r := &istanbul.Request{
 					Proposal: ev.Proposal,
 				}
@@ -132,6 +136,9 @@ func (c *core) handleEvents() {
 				c.handleFinalCommitted()
 			}
 		}
+
+		c.loopTimer.UpdateSince(start)
+
 	}
 }
 
