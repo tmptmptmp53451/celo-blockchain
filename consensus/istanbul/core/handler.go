@@ -113,7 +113,7 @@ func (c *core) handleEvents() {
 					c.istanbulMsgQueueingTimer.UpdateSince(ev.ReceivedAt)
 				}
 
-				if err := c.handleMsg(ev.Payload); err == nil {
+				if err := c.handleMsg(ev.Payload, ev.ReceivedAt); err == nil {
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgProcessingTimer.UpdateSince(ev.ReceivedAt)
 					}
@@ -126,7 +126,7 @@ func (c *core) handleEvents() {
 			case backlogEvent:
 				c.internalMeter.Mark(1)
 				// No need to check signature for internal messages
-				if err := c.handleCheckedMsg(ev.msg, ev.src); err == nil {
+				if err := c.handleCheckedMsg(ev.msg, ev.src, time.Time{}); err == nil {
 					p, err := ev.msg.Payload()
 					if err != nil {
 						c.logger.Warn("Get message payload failed", "err", err)
@@ -162,7 +162,7 @@ func (c *core) sendEvent(ev interface{}) {
 	c.backend.EventMux().Post(ev)
 }
 
-func (c *core) handleMsg(payload []byte) error {
+func (c *core) handleMsg(payload []byte, receivedAt time.Time) error {
 	logger := c.logger.New()
 
 	// Decode message and check its signature
@@ -179,11 +179,11 @@ func (c *core) handleMsg(payload []byte) error {
 		return istanbul.ErrUnauthorizedAddress
 	}
 
-	err := c.handleCheckedMsg(msg, src)
+	err := c.handleCheckedMsg(msg, src, receivedAt)
 	return err
 }
 
-func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
+func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator, receivedAt time.Time) error {
 	logger := c.logger.New("address", c.address, "from", src)
 
 	// Store the message if it's a future message
@@ -199,9 +199,17 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 	case msgPreprepare:
 		return testBacklog(c.handlePreprepare(msg, src))
 	case msgPrepare:
-		return testBacklog(c.handlePrepare(msg, src))
+		err := testBacklog(c.handlePrepare(msg, src))
+		if !receivedAt.IsZero() {
+			c.prepareTimer.UpdateSince(receivedAt)
+		}
+		return err
 	case msgCommit:
-		return testBacklog(c.handleCommit(msg, src))
+		err := testBacklog(c.handleCommit(msg, src))
+		if !receivedAt.IsZero() {
+			c.commitTimer.UpdateSince(receivedAt)
+		}
+		return err
 	case msgRoundChange:
 		return testBacklog(c.handleRoundChange(msg, src))
 	default:

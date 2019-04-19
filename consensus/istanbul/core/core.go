@@ -57,10 +57,10 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 		queueMeter: metrics.NewRegisteredMeter("consensus/istanbul/core/queue", nil),
 
-		consensusTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
-		prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 51),
-		commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 51),
-		roundChangeTimers: newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
+		consensusTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
+		// prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 51),
+		// commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 51),
+		// roundChangeTimers: newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
 		roundChangeTimerr: metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
 
 		prepareTimer:         metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
@@ -144,9 +144,9 @@ type core struct {
 	processingStartTimer metrics.Timer
 	finalizeTimer        metrics.Timer
 
-	prepareTimers     []metrics.Timer
-	commitTimers      []metrics.Timer
-	roundChangeTimers []metrics.Timer
+	// prepareTimers     []metrics.Timer
+	// commitTimers      []metrics.Timer
+	// roundChangeTimers []metrics.Timer
 }
 
 func (c *core) finalizeMessage(msg *message) ([]byte, error) {
