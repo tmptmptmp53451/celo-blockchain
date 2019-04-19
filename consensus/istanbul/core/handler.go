@@ -103,6 +103,7 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
+				c.processingStartTimer.UpdateSince(start)
 				startP := time.Now()
 				c.messageMeter.Mark(1)
 				if !ev.ReceivedAt.IsZero() {
@@ -137,6 +138,7 @@ func (c *core) handleEvents() {
 			}
 			c.handleTimeoutMsg()
 		case event, ok := <-c.finalCommittedSub.Chan():
+			startT := time.Now()
 			if !ok {
 				return
 			}
@@ -144,6 +146,7 @@ func (c *core) handleEvents() {
 			case istanbul.FinalCommittedEvent:
 				c.handleFinalCommitted()
 			}
+			c.finalizeTimer.UpdateSince(startT)
 		}
 
 		c.loopTimer.UpdateSince(start)

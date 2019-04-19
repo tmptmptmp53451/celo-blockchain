@@ -63,10 +63,12 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		roundChangeTimers: newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
 		roundChangeTimerr: metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
 
-		prepareTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
-		commitTimer:     metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
-		loopTimer:       metrics.NewRegisteredTimer("consensus/istanbul/core/loopTimer", nil),
-		processingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/processingTimer", nil),
+		prepareTimer:         metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
+		commitTimer:          metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
+		loopTimer:            metrics.NewRegisteredTimer("consensus/istanbul/core/loopTimer", nil),
+		processingTimer:      metrics.NewRegisteredTimer("consensus/istanbul/core/processingTimer", nil),
+		processingStartTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/processingStartTimer", nil),
+		finalizeTimer:        metrics.NewRegisteredTimer("consensus/istanbul/core/finalizeTimer", nil),
 
 		istanbulMsgQueueingTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgQueueing", nil),
 		istanbulMsgProcessingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
@@ -137,8 +139,10 @@ type core struct {
 	istanbulMsgProcessingTimer metrics.Timer
 	istanbulMsgPostGossipTimer metrics.Timer
 
-	loopTimer       metrics.Timer
-	processingTimer metrics.Timer
+	loopTimer            metrics.Timer
+	processingTimer      metrics.Timer
+	processingStartTimer metrics.Timer
+	finalizeTimer        metrics.Timer
 
 	prepareTimers     []metrics.Timer
 	commitTimers      []metrics.Timer
