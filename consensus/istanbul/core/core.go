@@ -50,11 +50,15 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		roundChangeTimestamp: time.Time{},
 		roundMeter:           metrics.NewRegisteredMeter("consensus/istanbul/core/round", nil),
 		sequenceMeter:        metrics.NewRegisteredMeter("consensus/istanbul/core/sequence", nil),
-		consensusTimer:       metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
-		prepareTimers:        newArrayOfTimers("consensus/istanbul/core/prepare", 51),
-		commitTimers:         newArrayOfTimers("consensus/istanbul/core/commit", 51),
-		roundChangeTimers:    newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
-		roundChangeTimerr:    metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
+
+		messageMeter:  metrics.NewRegisteredMeter("consensus/istanbul/core/message", nil),
+		internalMeter: metrics.NewRegisteredMeter("consensus/istanbul/core/internal", nil),
+
+		consensusTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
+		prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 51),
+		commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 51),
+		roundChangeTimers: newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
+		roundChangeTimerr: metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
 
 		prepareTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
 		commitTimer:  metrics.NewRegisteredTimer("consensus/istanbul/core/commitTimer", nil),
@@ -111,6 +115,10 @@ type core struct {
 	roundMeter metrics.Meter
 	// the meter to record the sequence update rate
 	sequenceMeter metrics.Meter
+
+	messageMeter  metrics.Meter
+	internalMeter metrics.Meter
+
 	// the timer to record consensus duration (from accepting a preprepare to final committed stage)
 	consensusTimer             metrics.Timer
 	prepareTimer               metrics.Timer
