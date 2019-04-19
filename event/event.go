@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/ethereum/go-ethereum/metrics"
 )
 
 // TypeMuxEvent is a time-tagged notification pushed to subscribers.
@@ -46,6 +48,7 @@ type TypeMux struct {
 
 // ErrMuxClosed is returned when Posting on a closed TypeMux.
 var ErrMuxClosed = errors.New("event: mux closed")
+var mutexPostTimer = metrics.NewRegisteredTimer("mutexPost", nil)
 
 // Subscribe creates a subscription for events of the given types. The
 // subscription's channel is closed when it is unsubscribed
@@ -81,6 +84,7 @@ func (mux *TypeMux) Subscribe(types ...interface{}) *TypeMuxSubscription {
 // Post sends an event to all receivers registered for the given type.
 // It returns ErrMuxClosed if the mux has been stopped.
 func (mux *TypeMux) Post(ev interface{}) error {
+	start := time.Now()
 	event := &TypeMuxEvent{
 		Time: time.Now(),
 		Data: ev,
@@ -96,6 +100,7 @@ func (mux *TypeMux) Post(ev interface{}) error {
 	for _, sub := range subs {
 		sub.deliver(event)
 	}
+	mutexPostTimer.UpdateSince(start)
 	return nil
 }
 
