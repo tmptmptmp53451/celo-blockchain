@@ -56,7 +56,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 
 		hash := istanbul.RLPHash(data)
 
-		if _, ok := sb.knownMessages.Get(hash); ok {
+		if sb.knownMessages.Contains(hash) {
 			return true, nil
 		}
 
@@ -86,7 +86,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		m.Add(hash, true)
 
 		// Mark self known message
-		if _, ok := sb.knownMessages.Get(hash); ok {
+		if sb.knownMessages.Contains(hash) {
 			return true, nil
 		}
 		sb.knownMessages.Add(hash, true)
