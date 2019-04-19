@@ -84,8 +84,8 @@ func (c *core) handleEvents() {
 
 	for {
 		start := time.Now()
+		chanLen := len(c.events.Chan())
 		select {
-
 		case event, ok := <-c.events.Chan():
 			c.queueMeter.Mark(int64(len(c.events.Chan())))
 			if !ok {
@@ -94,6 +94,7 @@ func (c *core) handleEvents() {
 			// A real event arrived, process interesting content
 			switch ev := event.Data.(type) {
 			case istanbul.RequestEvent:
+
 				c.requestMeter.Mark(1)
 				r := &istanbul.Request{
 					Proposal: ev.Proposal,
@@ -103,7 +104,9 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				c.processingStartTimer.UpdateSince(start)
+				if chanLen > 1 {
+					c.processingStartTimer.UpdateSince(start)
+				}
 				startP := time.Now()
 				c.messageMeter.Mark(1)
 				if !ev.ReceivedAt.IsZero() {
