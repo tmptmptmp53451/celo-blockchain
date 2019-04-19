@@ -56,17 +56,6 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 
 		hash := istanbul.RLPHash(data)
 
-		// Mark peer's message
-		ms, ok := sb.recentMessages.Get(addr)
-		var m *lru.ARCCache
-		if ok {
-			m, _ = ms.(*lru.ARCCache)
-		} else {
-			m, _ = lru.NewARC(inmemoryMessages)
-			go sb.recentMessages.Add(addr, m)
-		}
-		go m.Add(hash, true)
-
 		if !msg.ReceivedAt.IsZero() {
 			sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
 		}
@@ -80,6 +69,17 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		if !sb.coreStarted {
 			return true, istanbul.ErrStoppedEngine
 		}
+
+		// Mark peer's message
+		ms, ok := sb.recentMessages.Get(addr)
+		var m *lru.ARCCache
+		if ok {
+			m, _ = ms.(*lru.ARCCache)
+		} else {
+			m, _ = lru.NewARC(inmemoryMessages)
+			sb.recentMessages.Add(addr, m)
+		}
+		m.Add(hash, true)
 
 		// Mark self known message
 		if _, ok := sb.knownMessages.Get(hash); ok {
