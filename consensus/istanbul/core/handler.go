@@ -50,7 +50,8 @@ func (c *core) Stop() error {
 
 // Subscribe both internal and external events
 func (c *core) subscribeEvents() {
-	c.events = c.backend.EventMux().Subscribe(
+	c.events = c.backend.EventMux().SubscribeWBuffer(
+		1000,
 		// external events
 		istanbul.RequestEvent{},
 		istanbul.MessageEvent{},
