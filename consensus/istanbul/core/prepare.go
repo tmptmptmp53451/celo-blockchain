@@ -32,10 +32,6 @@ func (c *core) sendPrepare() {
 		return
 	}
 
-	if !c.consensusTimestamp.IsZero() && c.isProposer() {
-		c.prepareTimer.UpdateSince(c.consensusTimestamp)
-	}
-
 	c.broadcast(&message{
 		Code: msgPrepare,
 		Msg:  encodedSubject,
