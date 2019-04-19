@@ -46,17 +46,17 @@ func (sb *Backend) Protocol() consensus.Protocol {
 
 // HandleMsg implements consensus.Handler.HandleMsg
 func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
-	if !msg.ReceivedAt.IsZero() {
-		sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
-	}
-	sb.coreMu.Lock()
-
-	if !msg.ReceivedAt.IsZero() {
-		sb.istanbulMsgLockAcquiredTimer.UpdateSince(msg.ReceivedAt)
-	}
-	defer sb.coreMu.Unlock()
-
 	if msg.Code == istanbulMsg {
+		if !msg.ReceivedAt.IsZero() {
+			sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
+		}
+		sb.coreMu.Lock()
+
+		if !msg.ReceivedAt.IsZero() {
+			sb.istanbulMsgLockAcquiredTimer.UpdateSince(msg.ReceivedAt)
+		}
+		defer sb.coreMu.Unlock()
+
 		if !sb.coreStarted {
 			return true, istanbul.ErrStoppedEngine
 		}
