@@ -49,6 +49,7 @@ type TypeMux struct {
 // ErrMuxClosed is returned when Posting on a closed TypeMux.
 var ErrMuxClosed = errors.New("event: mux closed")
 var mutexPostTimer = metrics.NewRegisteredTimer("mutexPost", nil)
+var mutexPostWOLockTimer = metrics.NewRegisteredTimer("mutexPostWOLock", nil)
 
 // Subscribe creates a subscription for events of the given types. The
 // subscription's channel is closed when it is unsubscribed
@@ -112,14 +113,13 @@ func (mux *TypeMux) PostWOLock(ev interface{}) error {
 	}
 	rtyp := reflect.TypeOf(ev)
 	if mux.stopped {
-		mux.mutex.RUnlock()
 		return ErrMuxClosed
 	}
 	subs := mux.subm[rtyp]
 	for _, sub := range subs {
 		sub.deliverWOLock(event)
 	}
-	mutexPostTimer.UpdateSince(start)
+	mutexPostWOLockTimer.UpdateSince(start)
 	return nil
 }
 
