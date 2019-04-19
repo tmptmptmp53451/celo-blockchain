@@ -46,8 +46,20 @@ func (sb *Backend) Protocol() consensus.Protocol {
 
 // HandleMsg implements consensus.Handler.HandleMsg
 func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
+	if !msg.ReceivedAt.IsZero() {
+		sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
+	}
+	sb.coreMu.Lock()
+
+	if !msg.ReceivedAt.IsZero() {
+		sb.istanbulMsgLockAcquiredTimer.UpdateSince(msg.ReceivedAt)
+	}
+	defer sb.coreMu.Unlock()
 
 	if msg.Code == istanbulMsg {
+		if !sb.coreStarted {
+			return true, istanbul.ErrStoppedEngine
+		}
 
 		var data []byte
 		if err := msg.Decode(&data); err != nil {
@@ -55,24 +67,6 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		}
 
 		hash := istanbul.RLPHash(data)
-
-		if sb.knownMessages.Contains(hash) {
-			return true, nil
-		}
-
-		if !msg.ReceivedAt.IsZero() {
-			sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
-		}
-		sb.coreMu.Lock()
-
-		if !msg.ReceivedAt.IsZero() {
-			sb.istanbulMsgLockAcquiredTimer.UpdateSince(msg.ReceivedAt)
-		}
-		defer sb.coreMu.Unlock()
-
-		if !sb.coreStarted {
-			return true, istanbul.ErrStoppedEngine
-		}
 
 		// Mark peer's message
 		ms, ok := sb.recentMessages.Get(addr)
@@ -86,7 +80,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		m.Add(hash, true)
 
 		// Mark self known message
-		if sb.knownMessages.Contains(hash) {
+		if _, ok := sb.knownMessages.Get(hash); ok {
 			return true, nil
 		}
 		sb.knownMessages.Add(hash, true)
