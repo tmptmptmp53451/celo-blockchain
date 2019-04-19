@@ -47,9 +47,18 @@ func (sb *Backend) Protocol() consensus.Protocol {
 // HandleMsg implements consensus.Handler.HandleMsg
 func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 	if msg.Code == istanbulMsg {
+
+		var data []byte
+		if err := msg.Decode(&data); err != nil {
+			return true, errDecodeFailed
+		}
+
+		hash := istanbul.RLPHash(data)
+
 		if !msg.ReceivedAt.IsZero() {
 			sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
 		}
+
 		sb.coreMu.Lock()
 
 		if !msg.ReceivedAt.IsZero() {
@@ -60,13 +69,6 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		if !sb.coreStarted {
 			return true, istanbul.ErrStoppedEngine
 		}
-
-		var data []byte
-		if err := msg.Decode(&data); err != nil {
-			return true, errDecodeFailed
-		}
-
-		hash := istanbul.RLPHash(data)
 
 		// Mark peer's message
 		ms, ok := sb.recentMessages.Get(addr)
