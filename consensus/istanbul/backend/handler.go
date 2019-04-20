@@ -54,9 +54,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		}
 
 		hash := istanbul.RLPHash(data)
-		if sb.knownMessages.Contains(hash) {
-			return true, nil
-		}
+
 		if !msg.ReceivedAt.IsZero() {
 			sb.istanbulMsgWaitForLockTimer.UpdateSince(msg.ReceivedAt)
 		}
