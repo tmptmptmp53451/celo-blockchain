@@ -58,8 +58,8 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		queueMeter: metrics.NewRegisteredMeter("consensus/istanbul/core/queue", nil),
 
 		consensusTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
-		prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 5),
-		commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 5),
+		prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 11),
+		commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 11),
 		roundChangeTimerr: metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
 
 		prepareTimer:         metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
