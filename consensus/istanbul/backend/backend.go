@@ -90,6 +90,7 @@ type Backend struct {
 	sealMu            sync.Mutex
 	coreStarted       bool
 	coreMu            sync.RWMutex
+	recentMessagesMu  sync.RWMutex
 
 	// Current list of candidates we are pushing
 	candidates map[common.Address]bool
