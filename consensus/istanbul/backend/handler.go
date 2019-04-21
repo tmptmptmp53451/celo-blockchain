@@ -61,7 +61,8 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 
 		// Mark peer's message
 		go func() {
-			ms, ok := sb.recentMessages.Get(addr)
+			// make this lock-free
+			ms, ok := sb.recentMessages.Peek(addr)
 			var m *lru.ARCCache
 			if ok {
 				m, _ = ms.(*lru.ARCCache)
@@ -76,6 +77,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 				}
 				sb.recentMessagesMu.Unlock()
 			}
+			// make this lock-free
 			m.Add(hash, true)
 		}
 

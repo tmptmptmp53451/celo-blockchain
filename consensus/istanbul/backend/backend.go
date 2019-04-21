@@ -103,8 +103,8 @@ type Backend struct {
 	// event subscription for ChainHeadEvent event
 	broadcaster consensus.Broadcaster
 
-	recentMessages *lru.ARCCache // the cache of peer's messages
-	knownMessages  *lru.Cache    // the cache of self messages
+	recentMessages *lru.Cache // the cache of peer's messages
+	knownMessages  *lru.Cache // the cache of self messages
 
 	istanbulMsgWaitForLockTimer    metrics.Timer
 	istanbulMsgLockAcquiredTimer   metrics.Timer
