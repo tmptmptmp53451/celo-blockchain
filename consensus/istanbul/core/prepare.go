@@ -58,10 +58,11 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 
 	c.acceptPrepare(msg, src)
 
-	// if !c.consensusTimestamp.IsZero() && c.isProposer() {
-	// 	prepareSize := c.current.GetPrepareOrCommitSize()
-	// 	c.prepareTimers[prepareSize].UpdateSince(c.consensusTimestamp)
-	// }
+	prepareSize := c.current.GetPrepareOrCommitSize()
+	if !c.consensusTimestamp.IsZero() && c.isProposer() && prepareSize%10 == 1 {
+		c.prepareTimers[prepareSize/10].UpdateSince(c.consensusTimestamp)
+	}
+
 	// Change to Prepared state if we've received enough PREPARE messages or it is locked
 	// and we are in earlier state before Prepared state.
 	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&

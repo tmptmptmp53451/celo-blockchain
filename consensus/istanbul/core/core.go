@@ -57,10 +57,9 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 		queueMeter: metrics.NewRegisteredMeter("consensus/istanbul/core/queue", nil),
 
-		consensusTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
-		// prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 51),
-		// commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 51),
-		// roundChangeTimers: newArrayOfTimers("consensus/istanbul/core/roundChange", 51),
+		consensusTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/consensus", nil),
+		prepareTimers:     newArrayOfTimers("consensus/istanbul/core/prepare", 5),
+		commitTimers:      newArrayOfTimers("consensus/istanbul/core/commit", 5),
 		roundChangeTimerr: metrics.NewRegisteredTimer("consensus/istanbul/core/roundChangeTimerr", nil),
 
 		prepareTimer:         metrics.NewRegisteredTimer("consensus/istanbul/core/prepareTimer", nil),
@@ -81,7 +80,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 func newArrayOfTimers(prefix string, count int) []metrics.Timer {
 	timers := make([]metrics.Timer, count)
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 5; i++ {
 		timers[i] = metrics.NewRegisteredTimer(fmt.Sprintf("%s%d", prefix, i), nil)
 	}
 	return timers
