@@ -79,7 +79,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 			}
 			// make this lock-free
 			m.Add(hash, true)
-		}
+		}()
 
 		// Mark self known message
 		go func() {

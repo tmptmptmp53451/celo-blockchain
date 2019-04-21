@@ -46,7 +46,7 @@ const (
 func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Database) consensus.Istanbul {
 	// Allocate the snapshot caches and create the engine
 	recents, _ := lru.NewARC(inmemorySnapshots)
-	recentMessages, _ := lru.NewARC(inmemoryPeers)
+	recentMessages, _ := lru.New(inmemoryPeers)
 	knownMessages, _ := lru.New(inmemoryMessages)
 	backend := &Backend{
 		config:           config,
