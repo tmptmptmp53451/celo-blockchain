@@ -80,7 +80,7 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 
 func newArrayOfTimers(prefix string, count int) []metrics.Timer {
 	timers := make([]metrics.Timer, count)
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		timers[i] = metrics.NewRegisteredTimer(fmt.Sprintf("%s%d", prefix, i), nil)
 	}
 	return timers
