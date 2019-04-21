@@ -60,22 +60,24 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		}
 
 		// Mark peer's message
-		ms, ok := sb.recentMessages.Get(addr)
-		var m *lru.ARCCache
-		if ok {
-			m, _ = ms.(*lru.ARCCache)
-		} else {
-			sb.recentMessagesMu.Lock()
+		go func() {
 			ms, ok := sb.recentMessages.Get(addr)
+			var m *lru.ARCCache
 			if ok {
 				m, _ = ms.(*lru.ARCCache)
 			} else {
-				m, _ = lru.NewARC(inmemoryMessages)
-				sb.recentMessages.Add(addr, m)
+				sb.recentMessagesMu.Lock()
+				ms, ok := sb.recentMessages.Get(addr)
+				if ok {
+					m, _ = ms.(*lru.ARCCache)
+				} else {
+					m, _ = lru.NewARC(inmemoryMessages)
+					sb.recentMessages.Add(addr, m)
+				}
+				sb.recentMessagesMu.Unlock()
 			}
-			sb.recentMessagesMu.Unlock()
+			m.Add(hash, true)
 		}
-		m.Add(hash, true)
 
 		// Mark self known message
 		go func() {
