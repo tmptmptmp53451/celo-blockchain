@@ -77,13 +77,11 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		}
 		m.Add(hash, true)
 
-		sb.knownMessagesMu.Lock()
 		// Mark self known message
-		if sb.knownMessages.Contains(hash) {
+		contained, _ := sb.knownMessages.ContainsOrAdd(hash, true)
+		if contained {
 			return true, nil
 		}
-		sb.knownMessages.Add(hash, true)
-		sb.knownMessagesMu.Unlock()
 
 		if !msg.ReceivedAt.IsZero() {
 			sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)
