@@ -47,7 +47,7 @@ func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 	// Allocate the snapshot caches and create the engine
 	recents, _ := lru.NewARC(inmemorySnapshots)
 	recentMessages, _ := lru.NewARC(inmemoryPeers)
-	knownMessages, _ := lru.NewARC(inmemoryMessages)
+	knownMessages, _ := lru.New(inmemoryMessages)
 	backend := &Backend{
 		config:           config,
 		istanbulEventMux: new(event.TypeMux),
