@@ -143,8 +143,8 @@ type core struct {
 	processingStartTimer metrics.Timer
 	finalizeTimer        metrics.Timer
 
-	// prepareTimers     []metrics.Timer
-	// commitTimers      []metrics.Timer
+	prepareTimers []metrics.Timer
+	commitTimers  []metrics.Timer
 	// roundChangeTimers []metrics.Timer
 }
 
