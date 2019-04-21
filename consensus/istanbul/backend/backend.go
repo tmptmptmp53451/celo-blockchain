@@ -91,6 +91,7 @@ type Backend struct {
 	coreStarted       bool
 	coreMu            sync.RWMutex
 	recentMessagesMu  sync.RWMutex
+	knownMessagesMu   sync.RWMutex
 
 	// Current list of candidates we are pushing
 	candidates map[common.Address]bool
@@ -103,7 +104,7 @@ type Backend struct {
 	broadcaster consensus.Broadcaster
 
 	recentMessages *lru.ARCCache // the cache of peer's messages
-	knownMessages  *lru.ARCCache // the cache of self messages
+	knownMessages  *lru.Cache    // the cache of self messages
 
 	istanbulMsgWaitForLockTimer    metrics.Timer
 	istanbulMsgLockAcquiredTimer   metrics.Timer
