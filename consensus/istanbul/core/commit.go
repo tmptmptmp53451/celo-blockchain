@@ -47,7 +47,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 	if !c.consensusTimestamp.IsZero() && c.isProposer() {
 		c.commitTimer.UpdateSince(c.consensusTimestamp)
 	}
-	c.broadcast(&message{
+	go c.broadcast(&message{
 		Code: msgCommit,
 		Msg:  encodedSubject,
 	})

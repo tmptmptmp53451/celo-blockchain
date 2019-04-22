@@ -117,7 +117,7 @@ func (c *core) handleEvents() {
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgProcessingTimer.UpdateSince(ev.ReceivedAt)
 					}
-					c.backend.Gossip(c.valSet, ev.Payload)
+					go c.backend.Gossip(c.valSet, ev.Payload)
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgPostGossipTimer.UpdateSince(ev.ReceivedAt)
 					}
@@ -132,7 +132,7 @@ func (c *core) handleEvents() {
 						c.logger.Warn("Get message payload failed", "err", err)
 						continue
 					}
-					c.backend.Gossip(c.valSet, p)
+					go c.backend.Gossip(c.valSet, p)
 				}
 			}
 		case _, ok := <-c.timeoutSub.Chan():

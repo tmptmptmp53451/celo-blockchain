@@ -32,7 +32,7 @@ func (c *core) sendPrepare() {
 		return
 	}
 
-	c.broadcast(&message{
+	go c.broadcast(&message{
 		Code: msgPrepare,
 		Msg:  encodedSubject,
 	})
