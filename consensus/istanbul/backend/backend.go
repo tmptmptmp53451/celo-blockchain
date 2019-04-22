@@ -138,7 +138,7 @@ func (sb *Backend) Broadcast(valSet istanbul.ValidatorSet, payload []byte) error
 // Gossip implements istanbul.Backend.Gossip
 func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte) error {
 	hash := istanbul.RLPHash(payload)
-	sb.knownMessages.Add(hash, true)
+	sb.knownMessages.Add(hash[:], true)
 
 	targets := make(map[common.Address]bool)
 	for _, val := range valSet.List() {
@@ -150,23 +150,23 @@ func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte) error {
 	if sb.broadcaster != nil && len(targets) > 0 {
 		ps := sb.broadcaster.FindPeers(targets)
 		for addr, p := range ps {
-			ms, ok := sb.recentMessages.Get(addr)
+			ms, ok := sb.recentMessages.Get(addr[:])
 			var m *common.CustomLRU
 			if ok {
 				m, _ = ms.(*common.CustomLRU)
 			} else {
 				sb.recentMessagesMu.Lock()
-				ms, ok := sb.recentMessages.Get(addr)
+				ms, ok := sb.recentMessages.Get(addr[:])
 				if ok {
 					m, _ = ms.(*common.CustomLRU)
 				} else {
 					m = common.NewCustomLRU(int64(60 * 1000))
-					sb.recentMessages.Add(addr, m)
+					sb.recentMessages.Add(addr[:], m)
 				}
 				sb.recentMessagesMu.Unlock()
 			}
 			// make this lock-free
-			m.Add(hash, true)
+			m.Add(hash[:], true)
 
 			go p.Send(istanbulMsg, payload)
 		}

@@ -61,28 +61,28 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		// Mark peer's message
 		go func() {
 			// make this lock-free
-			ms, ok := sb.recentMessages.Get(addr)
+			ms, ok := sb.recentMessages.Get(addr[:])
 			var m *common.CustomLRU
 			if ok {
 				m, _ = ms.(*common.CustomLRU)
 			} else {
 				sb.recentMessagesMu.Lock()
-				ms, ok := sb.recentMessages.Get(addr)
+				ms, ok := sb.recentMessages.Get(addr[:])
 				if ok {
 					m, _ = ms.(*common.CustomLRU)
 				} else {
 					m = common.NewCustomLRU(int64(60 * 1000))
-					sb.recentMessages.Add(addr, m)
+					sb.recentMessages.Add(addr[:], m)
 				}
 				sb.recentMessagesMu.Unlock()
 			}
 			// make this lock-free
-			m.Add(hash, true)
+			m.Add(hash[:], true)
 		}()
 
 		// Mark self known message
 		go func() {
-			contained := sb.knownMessages.Add(hash, true)
+			contained := sb.knownMessages.Add(hash[:], true)
 			if !contained {
 				if !msg.ReceivedAt.IsZero() {
 					sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)
