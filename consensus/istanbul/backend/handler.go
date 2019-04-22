@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/p2p"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -62,17 +61,17 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		// Mark peer's message
 		go func() {
 			// make this lock-free
-			ms, ok := sb.recentMessages.Peek(addr)
-			var m *lru.ARCCache
+			ms, ok := sb.recentMessages.Get(addr)
+			var m *common.CustomLRU
 			if ok {
-				m, _ = ms.(*lru.ARCCache)
+				m, _ = ms.(*common.CustomLRU)
 			} else {
 				sb.recentMessagesMu.Lock()
 				ms, ok := sb.recentMessages.Get(addr)
 				if ok {
-					m, _ = ms.(*lru.ARCCache)
+					m, _ = ms.(*common.CustomLRU)
 				} else {
-					m, _ = lru.NewARC(inmemoryMessages)
+					m = common.NewCustomLRU(int64(60 * 1000))
 					sb.recentMessages.Add(addr, m)
 				}
 				sb.recentMessagesMu.Unlock()
@@ -83,7 +82,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 
 		// Mark self known message
 		go func() {
-			contained, _ := sb.knownMessages.ContainsOrAdd(hash, true)
+			contained := sb.knownMessages.Add(hash, true)
 			if !contained {
 				if !msg.ReceivedAt.IsZero() {
 					sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)

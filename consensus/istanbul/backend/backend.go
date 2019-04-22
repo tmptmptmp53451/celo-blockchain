@@ -46,8 +46,6 @@ const (
 func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Database) consensus.Istanbul {
 	// Allocate the snapshot caches and create the engine
 	recents, _ := lru.NewARC(inmemorySnapshots)
-	recentMessages, _ := lru.New(inmemoryPeers)
-	knownMessages, _ := lru.New(inmemoryMessages)
 	backend := &Backend{
 		config:           config,
 		istanbulEventMux: new(event.TypeMux),
@@ -59,12 +57,12 @@ func New(config *istanbul.Config, privateKey *ecdsa.PrivateKey, db ethdb.Databas
 		recents:          recents,
 		candidates:       make(map[common.Address]bool),
 		coreStarted:      false,
-		recentMessages:   recentMessages,
-		knownMessages:    knownMessages,
 
 		istanbulMsgWaitForLockTimer:    metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgWaitForLock", nil),
 		istanbulMsgLockAcquiredTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgLockAcquired", nil),
 		istanbulMsgPuttingInQueueTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgPuttingInQueue", nil),
+		recentMessages:                 common.NewCustomLRU(int64(60 * 1000)),
+		knownMessages:                  common.NewCustomLRU(int64(60 * 1000)),
 	}
 	backend.core = istanbulCore.New(backend, backend.config)
 	return backend
@@ -103,8 +101,8 @@ type Backend struct {
 	// event subscription for ChainHeadEvent event
 	broadcaster consensus.Broadcaster
 
-	recentMessages *lru.Cache // the cache of peer's messages
-	knownMessages  *lru.Cache // the cache of self messages
+	recentMessages *common.CustomLRU // the cache of peer's messages
+	knownMessages  *common.CustomLRU // the cache of self messages
 
 	istanbulMsgWaitForLockTimer    metrics.Timer
 	istanbulMsgLockAcquiredTimer   metrics.Timer
@@ -152,17 +150,17 @@ func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte) error {
 	if sb.broadcaster != nil && len(targets) > 0 {
 		ps := sb.broadcaster.FindPeers(targets)
 		for addr, p := range ps {
-			ms, ok := sb.recentMessages.Peek(addr)
-			var m *lru.ARCCache
+			ms, ok := sb.recentMessages.Get(addr)
+			var m *common.CustomLRU
 			if ok {
-				m, _ = ms.(*lru.ARCCache)
+				m, _ = ms.(*common.CustomLRU)
 			} else {
 				sb.recentMessagesMu.Lock()
 				ms, ok := sb.recentMessages.Get(addr)
 				if ok {
-					m, _ = ms.(*lru.ARCCache)
+					m, _ = ms.(*common.CustomLRU)
 				} else {
-					m, _ = lru.NewARC(inmemoryMessages)
+					m = common.NewCustomLRU(int64(60 * 1000))
 					sb.recentMessages.Add(addr, m)
 				}
 				sb.recentMessagesMu.Unlock()
