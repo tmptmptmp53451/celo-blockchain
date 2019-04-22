@@ -134,12 +134,12 @@ func newMeteredConn(conn net.Conn, ingress bool, ip net.IP) net.Conn {
 // and the peer ingress traffic meters along the way.
 func (c *meteredConn) Read(b []byte) (n int, err error) {
 	n, err = c.Conn.Read(b)
-	ingressTrafficMeter.Mark(int64(n))
-	c.lock.RLock()
-	if c.trafficMetered {
-		c.ingressMeter.Mark(int64(n))
-	}
-	c.lock.RUnlock()
+	// ingressTrafficMeter.Mark(int64(n))
+	// c.lock.RLock()
+	// if c.trafficMetered {
+	// 	// c.ingressMeter.Mark(int64(n))
+	// }
+	// c.lock.RUnlock()
 	return n, err
 }
 
@@ -147,12 +147,12 @@ func (c *meteredConn) Read(b []byte) (n int, err error) {
 // and the peer egress traffic meters along the way.
 func (c *meteredConn) Write(b []byte) (n int, err error) {
 	n, err = c.Conn.Write(b)
-	egressTrafficMeter.Mark(int64(n))
-	c.lock.RLock()
-	if c.trafficMetered {
-		c.egressMeter.Mark(int64(n))
-	}
-	c.lock.RUnlock()
+	// egressTrafficMeter.Mark(int64(n))
+	// c.lock.RLock()
+	// if c.trafficMetered {
+	// 	// c.egressMeter.Mark(int64(n))
+	// }
+	// c.lock.RUnlock()
 	return n, err
 }
 
