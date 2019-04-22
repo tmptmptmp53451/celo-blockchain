@@ -152,20 +152,23 @@ func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte) error {
 	if sb.broadcaster != nil && len(targets) > 0 {
 		ps := sb.broadcaster.FindPeers(targets)
 		for addr, p := range ps {
-			ms, ok := sb.recentMessages.Get(addr)
+			ms, ok := sb.recentMessages.Peek(addr)
 			var m *lru.ARCCache
 			if ok {
 				m, _ = ms.(*lru.ARCCache)
-				if _, k := m.Get(hash); k {
-					// This peer had this event, skip it
-					continue
-				}
 			} else {
-				m, _ = lru.NewARC(inmemoryMessages)
+				sb.recentMessagesMu.Lock()
+				ms, ok := sb.recentMessages.Get(addr)
+				if ok {
+					m, _ = ms.(*lru.ARCCache)
+				} else {
+					m, _ = lru.NewARC(inmemoryMessages)
+					sb.recentMessages.Add(addr, m)
+				}
+				sb.recentMessagesMu.Unlock()
 			}
-
+			// make this lock-free
 			m.Add(hash, true)
-			sb.recentMessages.Add(addr, m)
 
 			go p.Send(istanbulMsg, payload)
 		}
