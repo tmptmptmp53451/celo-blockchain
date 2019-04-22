@@ -125,7 +125,6 @@ func (c *core) handleEvents() {
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgProcessingTimer.UpdateSince(ev.ReceivedAt)
 					}
-					go c.backend.Gossip(c.valSet, ev.Payload)
 					if !ev.ReceivedAt.IsZero() {
 						c.istanbulMsgPostGossipTimer.UpdateSince(ev.ReceivedAt)
 					}
