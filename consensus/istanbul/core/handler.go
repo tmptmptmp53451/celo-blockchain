@@ -17,8 +17,6 @@
 package core
 
 import (
-	"log"
-	"net/http"
 	_ "net/http/pprof"
 	"runtime"
 	"time"
@@ -33,9 +31,6 @@ func (c *core) Start() error {
 	c.startNewRound(common.Big0)
 	runtime.SetMutexProfileFraction(100)
 	runtime.SetBlockProfileRate(10)
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 	// Tests will handle events itself, so we have to make subscribeEvents()
 	// be able to call in test.
 	c.subscribeEvents()
