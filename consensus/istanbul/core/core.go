@@ -69,9 +69,10 @@ func New(backend istanbul.Backend, config *istanbul.Config) Engine {
 		processingStartTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/processingStartTimer", nil),
 		finalizeTimer:        metrics.NewRegisteredTimer("consensus/istanbul/core/finalizeTimer", nil),
 
-		istanbulMsgQueueingTimer:   metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgQueueing", nil),
-		istanbulMsgProcessingTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
-		istanbulMsgPostGossipTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgPostGossip", nil),
+		istanbulMsgPuttingInQueueTimer: metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgPuttingInQueue", nil),
+		istanbulMsgQueueingTimer:       metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgQueueing", nil),
+		istanbulMsgProcessingTimer:     metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgProcessing", nil),
+		istanbulMsgPostGossipTimer:     metrics.NewRegisteredTimer("consensus/istanbul/core/istanbulMsgPostGossip", nil),
 	}
 
 	c.validateFn = c.checkValidatorSignature
@@ -130,13 +131,15 @@ type core struct {
 	queueMeter metrics.Meter
 
 	// the timer to record consensus duration (from accepting a preprepare to final committed stage)
-	consensusTimer             metrics.Timer
-	prepareTimer               metrics.Timer
-	commitTimer                metrics.Timer
-	roundChangeTimerr          metrics.Timer
-	istanbulMsgQueueingTimer   metrics.Timer
-	istanbulMsgProcessingTimer metrics.Timer
-	istanbulMsgPostGossipTimer metrics.Timer
+	consensusTimer    metrics.Timer
+	prepareTimer      metrics.Timer
+	commitTimer       metrics.Timer
+	roundChangeTimerr metrics.Timer
+
+	istanbulMsgPuttingInQueueTimer metrics.Timer
+	istanbulMsgQueueingTimer       metrics.Timer
+	istanbulMsgProcessingTimer     metrics.Timer
+	istanbulMsgPostGossipTimer     metrics.Timer
 
 	loopTimer            metrics.Timer
 	processingTimer      metrics.Timer

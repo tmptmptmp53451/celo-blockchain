@@ -85,6 +85,9 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 		go func() {
 			contained, _ := sb.knownMessages.ContainsOrAdd(hash, true)
 			if !contained {
+				if !msg.ReceivedAt.IsZero() {
+					sb.istanbulMsgPuttingInQueueTimer.UpdateSince(msg.ReceivedAt)
+				}
 				sb.istanbulEventMux.PostWOLock(istanbul.MessageEvent{
 					Payload:    data,
 					ReceivedAt: msg.ReceivedAt,
