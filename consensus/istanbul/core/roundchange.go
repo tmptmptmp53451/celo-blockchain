@@ -78,6 +78,7 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 	}
 
 	if err := c.checkMessage(msgRoundChange, rc.View); err != nil {
+		logger.Warn("Roundchange msg faield", "round", rc.View.Round, "err", err)
 		return err
 	}
 
