@@ -141,6 +141,7 @@ var (
 		configFileFlag,
 		utils.IstanbulRequestTimeoutFlag,
 		utils.IstanbulBlockPeriodFlag,
+		utils.IstanbulFaultyModeFlag,
 	}
 
 	rpcFlags = []cli.Flag{
