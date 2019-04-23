@@ -31,6 +31,8 @@ func (c *core) sendPrepare() {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
+
+	logger.Warn("sendPrepare", "round", sub.View.Round)
 	c.broadcast(&message{
 		Code: msgPrepare,
 		Msg:  encodedSubject,
@@ -54,6 +56,8 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 	if err := c.verifyPrepare(prepare, src); err != nil {
 		return err
 	}
+
+	c.logger.Warn("handlePrepare", "round", prepare.View.Round)
 
 	c.acceptPrepare(msg, src)
 
