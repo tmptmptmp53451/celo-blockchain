@@ -59,7 +59,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 		return
 	}
 
-	c.broadcast(&message{
+	go c.broadcast(&message{
 		Code: msgRoundChange,
 		Msg:  payload,
 	})

@@ -31,7 +31,7 @@ func (c *core) sendPrepare() {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	c.broadcast(&message{
+	go c.broadcast(&message{
 		Code: msgPrepare,
 		Msg:  encodedSubject,
 	})

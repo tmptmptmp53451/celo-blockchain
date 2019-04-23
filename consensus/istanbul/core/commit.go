@@ -25,7 +25,7 @@ import (
 
 func (c *core) sendCommit() {
 	sub := c.current.Subject()
-	c.broadcastCommit(sub)
+	go c.broadcastCommit(sub)
 }
 
 func (c *core) sendCommitForOldBlock(view *istanbul.View, digest common.Hash) {
@@ -33,7 +33,7 @@ func (c *core) sendCommitForOldBlock(view *istanbul.View, digest common.Hash) {
 		View:   view,
 		Digest: digest,
 	}
-	c.broadcastCommit(sub)
+	go c.broadcastCommit(sub)
 }
 
 func (c *core) broadcastCommit(sub *istanbul.Subject) {
@@ -44,7 +44,7 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	c.broadcast(&message{
+	go c.broadcast(&message{
 		Code: msgCommit,
 		Msg:  encodedSubject,
 	})
