@@ -97,7 +97,7 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 	// If our round number is smaller than the certificate's round number, we would
 	// try to catch up the round number.
 
-	logger.Warn("handleRoundChange", "round", roundView.Round, "num", num)
+	logger.Warn("handleRoundChange", "round", roundView.Round, "sequence", roundView.Sequence, "num", num)
 	if c.waitingForRoundChange && num == c.valSet.F()+1 {
 		if cv.Round.Cmp(roundView.Round) < 0 {
 			c.sendRoundChange(roundView.Round)
