@@ -38,6 +38,7 @@ func (c *core) sendPreprepare(request *istanbul.Request) {
 			return
 		}
 
+		logger.Warn("sendPreprepare", "round", curView.Round)
 		c.broadcast(&message{
 			Code: msgPreprepare,
 			Msg:  preprepare,
@@ -97,6 +98,8 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		}
 		return err
 	}
+
+	logger.Warn("handlePreprepare", "round", preprepare.View.Round)
 
 	// Here is about to accept the PRE-PREPARE
 	if c.state == StateAcceptRequest {
