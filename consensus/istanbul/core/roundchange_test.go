@@ -127,6 +127,13 @@ var noGossip = map[int]bool{
 	3: false,
 }
 
+var onlyHalf = map[int]bool{
+	0: true,
+	1: false,
+	2: true,
+	3: false,
+}
+
 func TestRoundChangeWithLock(t *testing.T) {
 	sys := NewTestSystemWithBackend(4, 1)
 
@@ -213,6 +220,61 @@ func TestRoundChangeWithoutLock(t *testing.T) {
 	istMsgDistribution[msgPrepare] = gossip
 
 	// Eventually we should get a block again
+	select {
+	case <-time.After(time.Duration(istanbul.DefaultConfig.RequestTimeout) * time.Millisecond):
+		t.Error("Never finalized block")
+	case _, ok := <-newBlocks.Chan():
+		if !ok {
+			t.Error("Error reading block")
+		}
+	}
+
+	// Manually open and close b/c hijacking sys.listen
+	for _, b := range sys.backends {
+		b.engine.Stop() // start Istanbul core
+	}
+	close(sys.quit)
+}
+
+func TestRoundChangeLivenessFailure(t *testing.T) {
+	sys := NewTestSystemWithBackend(4, 1)
+
+	for index, b := range sys.backends {
+		testLogger.Error("backend", "address", b.address, "index", index)
+		b.engine.Start() // start Istanbul core
+	}
+
+	newBlocks := sys.backends[3].EventMux().Subscribe(istanbul.FinalCommittedEvent{})
+
+	istMsgDistribution := map[uint64]map[int]bool{}
+
+	istMsgDistribution[msgPreprepare] = gossip
+	istMsgDistribution[msgPrepare] = gossip
+	istMsgDistribution[msgCommit] = gossip
+	istMsgDistribution[msgRoundChange] = gossip
+
+	go sys.distributeIstMsgs(t, sys, istMsgDistribution)
+
+	// Start the first preprepare
+	sys.backends[0].NewRequest(makeBlock(1))
+
+	// Received the first block which will setup the round change timeout
+	<-newBlocks.Chan()
+	// Only let 0/2 receive the prepares and thus lock onto them
+	// Shame be upon me for modifying shared memory between two goroutines
+	// but this seemed much easier than to setup channels
+	istMsgDistribution[msgPrepare] = onlyHalf
+	sys.backends[0].NewRequest(makeBlockWithTime(2, 1))
+
+	// By now we should have sent prepares
+	<-time.After(2 * time.Second)
+	// Have the next proposer, 1, send a conflicting block
+	sys.backends[1].NewRequest(makeBlockWithTime(2, 2))
+	istMsgDistribution[msgPrepare] = gossip
+
+	// By this point, 1 will send a prepare with a different block that
+	// 0 and 2 have locked upon. Thus they will not send PREPARE, but 1
+	// and 3 will, and will thus lock on that as well, causing
 	select {
 	case <-time.After(time.Duration(istanbul.DefaultConfig.RequestTimeout) * time.Millisecond):
 		t.Error("Never finalized block")
