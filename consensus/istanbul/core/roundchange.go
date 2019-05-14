@@ -39,6 +39,8 @@ func (c *core) sendRoundChange(round *big.Int) {
 		return
 	}
 
+	logger.Debug("sendRoundChange", "current round", cv.Round, "target round", round, "rcs", c.roundChangeSet)
+
 	c.catchUpRound(&istanbul.View{
 		// The round number we'd like to transfer to.
 		Round:    new(big.Int).Set(round),
