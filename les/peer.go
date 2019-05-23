@@ -58,7 +58,8 @@ type peer struct {
 
 	announceType, requestAnnounceType uint64
 
-	id string
+	id        string
+	etherbase common.Address
 
 	headInfo *announceData
 	lock     sync.RWMutex
@@ -195,6 +196,10 @@ func (p *peer) SendBlockBodiesRLP(reqID, bv uint64, bodies []rlp.RawValue) error
 	return sendResponse(p.rw, BlockBodiesMsg, reqID, bv, bodies)
 }
 
+func (p *peer) SendEtherbaseRLP(reqID, bv uint64, etherbase common.Address) error {
+	return sendResponse(p.rw, EtherbaseMsg, reqID, bv, etherbase)
+}
+
 // SendCodeRLP sends a batch of arbitrary internal data, corresponding to the
 // hashes requested.
 func (p *peer) SendCode(reqID, bv uint64, data [][]byte) error {
@@ -305,6 +310,16 @@ func (p *peer) RequestHelperTrieProofs(reqID, cost uint64, data interface{}) err
 func (p *peer) RequestTxStatus(reqID, cost uint64, txHashes []common.Hash) error {
 	p.Log().Debug("Requesting transaction status", "count", len(txHashes))
 	return sendRequest(p.rw, GetTxStatusMsg, reqID, cost, txHashes)
+}
+
+// RequestEtherbase fetches the etherbase of a remote node.
+func (p *peer) RequestEtherbase(reqID, cost uint64) error {
+	p.Log().Debug("Requesting etherbase for peer", "enode", p.id)
+	type req struct {
+		ReqID uint64
+		Data  interface{}
+	}
+	return p2p.Send(p.rw, GetEtherbaseMsg, req{reqID, nil})
 }
 
 // SendTxStatus sends a batch of transactions to be added to the remote transaction pool.
@@ -538,6 +553,7 @@ func (ps *peerSet) notify(n peerSetNotify) {
 
 // Register injects a new peer into the working set, or returns an error if the
 // peer is already known.
+// TODO(asa): We should fetch the etherbase here
 func (ps *peerSet) Register(p *peer) error {
 	ps.lock.Lock()
 	if ps.closed {
@@ -557,6 +573,11 @@ func (ps *peerSet) Register(p *peer) error {
 	for _, n := range peers {
 		n.registerPeer(p)
 	}
+
+	// If we're a strictly light node, fetch the etherbase of our peer.
+	reqID := genReqID()
+	cost := p.GetRequestCost(GetEtherbaseMsg, int(1))
+	p.RequestEtherbase(reqID, cost)
 	return nil
 }
 
