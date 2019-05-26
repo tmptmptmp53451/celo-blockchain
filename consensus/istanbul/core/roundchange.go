@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"math/big"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -163,7 +164,14 @@ func (rcs *roundChangeSet) Add(r *big.Int, msg *message, src istanbul.Validator)
 	if err != nil {
 		return 0, err
 	}
-	return rcs.msgsForRound[round].Size(), nil
+
+	num := 0
+	for k, rms := range rcs.msgsForRound {
+		if k >= round {
+			num += rms.Size()
+		}
+	}
+	return num, nil
 }
 
 // Clear deletes the messages with smaller round
@@ -172,7 +180,7 @@ func (rcs *roundChangeSet) Clear(round *big.Int) {
 	defer rcs.mu.Unlock()
 
 	for k, rms := range rcs.msgsForRound {
-		if len(rms.Values()) == 0 || k < round.Uint64() {
+		if rms.Size() == 0 || k < round.Uint64() {
 			if rms != nil {
 				for _, msg := range rms.Values() {
 					if latestRound, ok := rcs.latestRoundForVal[msg.Address]; ok && k == latestRound {
@@ -190,17 +198,23 @@ func (rcs *roundChangeSet) MaxRound(num int) *big.Int {
 	rcs.mu.Lock()
 	defer rcs.mu.Unlock()
 
-	var maxRound *big.Int
-	for k, rms := range rcs.msgsForRound {
-		if rms.Size() < num {
-			continue
-		}
-		r := big.NewInt(int64(k))
-		if maxRound == nil || maxRound.Cmp(r) < 0 {
-			maxRound = r
+	// Sort rounds descending
+	var sortedRounds []uint64
+	for r := range rcs.msgsForRound {
+		sortedRounds = append(sortedRounds, r)
+	}
+	sort.Slice(sortedRounds, func(i, j int) bool { return sortedRounds[i] > sortedRounds[j] })
+
+	acc := 0
+	for _, r := range sortedRounds {
+		rms := rcs.msgsForRound[r]
+		acc += rms.Size()
+		if acc >= num {
+			return new(big.Int).SetUint64(r)
 		}
 	}
-	return maxRound
+
+	return nil
 }
 
 func (rcs *roundChangeSet) String() string {
@@ -208,8 +222,8 @@ func (rcs *roundChangeSet) String() string {
 	defer rcs.mu.Unlock()
 
 	msgsForRoundStr := make([]string, 0, len(rcs.msgsForRound))
-	for _, rms := range rcs.msgsForRound {
-		msgsForRoundStr = append(msgsForRoundStr, fmt.Sprintf("%v: %v", rms.View().Round, rms.String()))
+	for r, rms := range rcs.msgsForRound {
+		msgsForRoundStr = append(msgsForRoundStr, fmt.Sprintf("%v: %v", r, rms.String()))
 	}
 
 	latestRoundForValStr := make([]string, 0, len(rcs.latestRoundForVal))
