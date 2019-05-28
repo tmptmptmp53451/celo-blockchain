@@ -44,13 +44,13 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	c.broadcast(&message{
-		Code: msgCommit,
+	c.broadcast(&istanbul.Message{
+		Code: istanbul.MsgCommit,
 		Msg:  encodedSubject,
 	})
 }
 
-func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
+func (c *core) handleCommit(msg *istanbul.Message, src istanbul.Validator) error {
 	// Decode COMMIT message
 	var commit *istanbul.Subject
 	err := msg.Decode(&commit)
@@ -58,7 +58,7 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return errFailedDecodeCommit
 	}
 
-	if err := c.checkMessage(msgCommit, commit.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgCommit, commit.View); err != nil {
 		return err
 	}
 
@@ -94,7 +94,7 @@ func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) er
 	return nil
 }
 
-func (c *core) acceptCommit(msg *message, src istanbul.Validator) error {
+func (c *core) acceptCommit(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("from", src, "state", c.state)
 
 	// Add the COMMIT message to current round state
