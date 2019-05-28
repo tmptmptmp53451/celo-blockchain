@@ -96,15 +96,18 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
-				c.handleMsg(ev.Payload)
+				if err := c.handleMsg(ev.Payload); err == nil {
+					c.backend.Gossip(c.valSet, ev.Payload)
+				}
 			case backlogEvent:
 				// No need to check signature for internal messages
 				if err := c.handleCheckedMsg(ev.msg, ev.src); err == nil {
-					_, err := ev.msg.Payload()
+					p, err := ev.msg.Payload()
 					if err != nil {
 						c.logger.Warn("Get message payload failed", "err", err)
 						continue
 					}
+					c.backend.Gossip(c.valSet, p)
 				}
 			}
 		case _, ok := <-c.timeoutSub.Chan():
