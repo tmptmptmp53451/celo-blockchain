@@ -19,33 +19,35 @@ package core
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 )
 
-func (c *core) sendPreprepare(request *istanbul.Request) {
+func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate istanbul.RoundChangeCertificate) {
 	logger := c.logger.New("state", c.state)
 
 	// If I'm the proposer and I have the same sequence with the proposal
 	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer() {
 		curView := c.currentView()
 		preprepare, err := Encode(&istanbul.Preprepare{
-			View:     curView,
-			Proposal: request.Proposal,
+			View:                   curView,
+			Proposal:               request.Proposal,
+			RoundChangeCertificate: roundChangeCertificate,
 		})
 		if err != nil {
 			logger.Error("Failed to encode", "view", curView)
 			return
 		}
 
-		c.broadcast(&message{
-			Code: msgPreprepare,
+		c.broadcast(&istanbul.Message{
+			Code: istanbul.MsgPreprepare,
 			Msg:  preprepare,
 		})
 	}
 }
 
-func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
+func (c *core) handlePreprepare(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("from", src, "state", c.state)
 
 	// Decode PRE-PREPARE
@@ -55,9 +57,20 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePreprepare
 	}
 
+	// If round > 0, handle the ROUND CHANGE certificate.
+	if preprepare.View.Round.Cmp(common.Big0) > 0 {
+		if !preprepare.HasRoundChangeCertificate() {
+			return errMissingRoundChangeCertificate
+		}
+		err := c.handleRoundChangeCertificate(preprepare.RoundChangeCertificate)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Ensure we have the same view with the PRE-PREPARE message
 	// If it is old message, see if we need to broadcast COMMIT
-	if err := c.checkMessage(msgPreprepare, preprepare.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgPreprepare, preprepare.View); err != nil {
 		if err == errOldMessage {
 			// Get validator set for the given proposal
 			valSet := c.backend.ParentValidators(preprepare.Proposal).Copy()
@@ -80,6 +93,17 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		return errNotFromProposer
 	}
 
+	if preprepare.View.Round.Cmp(common.Big0) > 0 {
+		// If we have a PREPARED certificate after handling the ROUND CHANGE, the proposal must match.
+		// TODO(asa): Does it make a difference if this PREPARED certificate came from the ROUND CHANGE certificate vs
+		// from seeing PREPARE messages?
+		if !c.current.preparedCertificate.IsEmpty() && c.current.preparedCertificate.Proposal.Hash() != preprepare.Proposal.Hash() {
+			// Send round change
+			c.sendNextRoundChange()
+			return errInvalidProposal
+		}
+	}
+
 	// Verify the proposal we received
 	if duration, err := c.backend.Verify(preprepare.Proposal); err != nil {
 		logger.Warn("Failed to verify proposal", "err", err, "duration", duration)
@@ -98,27 +122,11 @@ func (c *core) handlePreprepare(msg *message, src istanbul.Validator) error {
 		return err
 	}
 
-	// Here is about to accept the PRE-PREPARE
+	// TODO(asa): Can we skip to COMMIT if we have a PREPARED certificate already?
 	if c.state == StateAcceptRequest {
-		// Send ROUND CHANGE if the locked proposal and the received proposal are different
-		if c.current.IsHashLocked() {
-			if preprepare.Proposal.Hash() == c.current.GetLockedHash() {
-				// Broadcast COMMIT and enters Prepared state directly
-				c.acceptPreprepare(preprepare)
-				c.setState(StatePrepared)
-				c.sendCommit()
-			} else {
-				// Send round change
-				c.sendNextRoundChange()
-			}
-		} else {
-			// Either
-			//   1. the locked proposal and the received proposal match
-			//   2. we have no locked proposal
-			c.acceptPreprepare(preprepare)
-			c.setState(StatePreprepared)
-			c.sendPrepare()
-		}
+		c.acceptPreprepare(preprepare)
+		c.setState(StatePreprepared)
+		c.sendPrepare()
 	}
 
 	return nil

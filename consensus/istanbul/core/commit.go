@@ -44,13 +44,13 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	c.broadcast(&message{
-		Code: msgCommit,
+	c.broadcast(&istanbul.Message{
+		Code: istanbul.MsgCommit,
 		Msg:  encodedSubject,
 	})
 }
 
-func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
+func (c *core) handleCommit(msg *istanbul.Message, src istanbul.Validator) error {
 	// Decode COMMIT message
 	var commit *istanbul.Subject
 	err := msg.Decode(&commit)
@@ -58,11 +58,15 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 		return errFailedDecodeCommit
 	}
 
-	if err := c.checkMessage(msgCommit, commit.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgCommit, commit.View); err != nil {
 		return err
 	}
 
 	if err := c.verifyCommit(commit, src); err != nil {
+		return err
+	}
+
+	if err := c.verifyCommittedSeal(commit, msg.CommittedSeal, src); err != nil {
 		return err
 	}
 
@@ -73,9 +77,11 @@ func (c *core) handleCommit(msg *message, src istanbul.Validator) error {
 	// If we already have a proposal, we may have chance to speed up the consensus process
 	// by committing the proposal without PREPARE messages.
 	if c.current.Commits.Size() > 2*c.valSet.F() && c.state.Cmp(StateCommitted) < 0 {
-		// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
-		c.current.LockHash()
 		c.commit()
+	} else if c.current.GetPrepareOrCommitSize() > 2*c.valSet.F() && c.state.Cmp(StatePrepared) < 0 {
+		if err := c.current.CreateAndSetPreparedCertificate(c.valSet.F()); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -94,7 +100,20 @@ func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) er
 	return nil
 }
 
-func (c *core) acceptCommit(msg *message, src istanbul.Validator) error {
+// verifyCommittedSeal verifies the commit seal in the received COMMIT message
+func (c *core) verifyCommittedSeal(commit *istanbul.Subject, committedSeal []byte, src istanbul.Validator) error {
+	subjectSeal := PrepareCommittedSeal(commit.Digest)
+	signer, err := c.validateFn(subjectSeal, committedSeal)
+	if err != nil {
+		return err
+	}
+	if signer != src.Address() {
+		return errInvalidCommittedSeal
+	}
+	return nil
+}
+
+func (c *core) acceptCommit(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("from", src, "state", c.state)
 
 	// Add the COMMIT message to current round state

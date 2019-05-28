@@ -19,6 +19,7 @@ package core
 import (
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 )
 
@@ -31,13 +32,83 @@ func (c *core) sendPrepare() {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
-	c.broadcast(&message{
-		Code: msgPrepare,
+	c.broadcast(&istanbul.Message{
+		Code: istanbul.MsgPrepare,
 		Msg:  encodedSubject,
 	})
 }
 
-func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
+func (c *core) handlePreparedCertificate(preparedCertificate istanbul.PreparedCertificate) error {
+	logger := c.logger.New("state", c.state)
+
+	// Validate the attached proposal
+	if _, err := c.backend.Verify(preparedCertificate.Proposal); err != nil {
+		return errInvalidPreparedCertificateProposal
+	}
+
+	if len(preparedCertificate.PrepareOrCommitMessages) > c.valSet.Size() || len(preparedCertificate.PrepareOrCommitMessages) < 2*c.valSet.F()+1 {
+		return errInvalidPreparedCertificateNumMsgs
+	}
+
+	seen := make(map[common.Address]bool)
+	for _, message := range preparedCertificate.PrepareOrCommitMessages {
+		data, err := message.PayloadNoSig()
+		if err != nil {
+			return err
+		}
+
+		// Verify message signed by a validator
+		signer, err := c.validateFn(data, message.Signature)
+		if err != nil {
+			return err
+		}
+
+		if signer != message.Address {
+			return errInvalidPreparedCertificateMsgSignature
+		}
+
+		// Check for duplicate messages
+		if seen[signer] {
+			return errInvalidPreparedCertificateDuplicate
+		}
+		seen[signer] = true
+
+		// Check that the message is a PREPARE or COMMIT message
+		if message.Code != istanbul.MsgPrepare && message.Code != istanbul.MsgCommit {
+			return errInvalidPreparedCertificateMsgCode
+		}
+
+		var subject *istanbul.Subject
+		if err := message.Decode(&subject); err != nil {
+			logger.Error("Failed to decode message in PREPARED certificate", "err", err)
+			return err
+		}
+
+		// Verify message for the proper sequence.
+		if subject.View.Sequence.Cmp(c.currentView().Sequence) != 0 {
+			return errInvalidPreparedCertificateMsgView
+		}
+
+		// Verify message for the proper proposal.
+		if subject.Digest != preparedCertificate.Proposal.Hash() {
+			return errInvalidPreparedCertificateDigestMismatch
+		}
+
+		// If COMMIT message, verify valid committed seal.
+		if message.Code == istanbul.MsgCommit {
+			_, src := c.valSet.GetByAddress(signer)
+			err := c.verifyCommittedSeal(subject, message.CommittedSeal, src)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	c.current.SetPreparedCertificate(preparedCertificate)
+	return nil
+}
+
+func (c *core) handlePrepare(msg *istanbul.Message, src istanbul.Validator) error {
 	// Decode PREPARE message
 	var prepare *istanbul.Subject
 	err := msg.Decode(&prepare)
@@ -45,23 +116,22 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePrepare
 	}
 
-	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgPrepare, prepare.View); err != nil {
 		return err
 	}
 
-	// If it is locked, it can only process on the locked block.
-	// Passing verifyPrepare and checkMessage implies it is processing on the locked block since it was verified in the Preprepared state.
 	if err := c.verifyPrepare(prepare, src); err != nil {
 		return err
 	}
 
 	c.acceptPrepare(msg, src)
 
-	// Change to Prepared state if we've received enough PREPARE messages or it is locked
-	// and we are in earlier state before Prepared state.
-	if ((c.current.IsHashLocked() && prepare.Digest == c.current.GetLockedHash()) || c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) &&
-		c.state.Cmp(StatePrepared) < 0 {
-		c.current.LockHash()
+	// Change to Prepared state if we've received enough PREPARE messages and we are in earlier state
+	// before Prepared state.
+	if (c.current.GetPrepareOrCommitSize() > 2*c.valSet.F()) && c.state.Cmp(StatePrepared) < 0 {
+		if err := c.current.CreateAndSetPreparedCertificate(c.valSet.F()); err != nil {
+			return err
+		}
 		c.setState(StatePrepared)
 		c.sendCommit()
 	}
@@ -82,7 +152,7 @@ func (c *core) verifyPrepare(prepare *istanbul.Subject, src istanbul.Validator) 
 	return nil
 }
 
-func (c *core) acceptPrepare(msg *message, src istanbul.Validator) error {
+func (c *core) acceptPrepare(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("from", src, "state", c.state)
 
 	// Add the PREPARE message to current round state
