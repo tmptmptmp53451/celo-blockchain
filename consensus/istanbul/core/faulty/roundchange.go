@@ -48,9 +48,9 @@ func (c *core) sendRoundChange(round *big.Int) {
 
 	// Now we have the new round number and sequence number
 	cv = c.currentView()
-	rc := &istanbul.Subject{
-		View:   cv,
-		Digest: common.Hash{},
+	rc := &istanbul.RoundChange{
+		View:                cv,
+		PreparedCertificate: istanbul.EmptyPreparedCertificate(),
 	}
 
 	payload, err := Encode(rc)
@@ -69,7 +69,7 @@ func (c *core) handleRoundChange(msg *istanbul.Message, src istanbul.Validator) 
 	logger := c.logger.New("state", c.state, "from", src.Address().Hex())
 
 	// Decode ROUND CHANGE message
-	var rc *istanbul.Subject
+	var rc *istanbul.RoundChange
 	if err := msg.Decode(&rc); err != nil {
 		logger.Error("Failed to decode ROUND CHANGE", "err", err)
 		return errInvalidMessage
