@@ -90,9 +90,6 @@ func (ms *messageSet) verify(msg *istanbul.Message) error {
 	if _, v := ms.valSet.GetByAddress(msg.Address); v == nil {
 		return istanbul.ErrUnauthorizedAddress
 	}
-
-	// TODO: check view number and sequence number
-
 	return nil
 }
 
