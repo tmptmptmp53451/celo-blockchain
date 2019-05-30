@@ -20,7 +20,7 @@ import "github.com/ethereum/go-ethereum/common"
 
 func (c *core) handleFinalCommitted() error {
 	logger := c.logger.New("state", c.state)
-	logger.Trace("Received a final committed proposal")
+	logger.Trace("Received a final committed proposal", "seq", c.currentView().Sequence, "round", c.currentView().Round)
 	c.startNewRound(common.Big0)
 	return nil
 }
