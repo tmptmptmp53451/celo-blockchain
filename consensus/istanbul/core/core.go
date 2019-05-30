@@ -188,13 +188,14 @@ func (c *core) commit() {
 func (c *core) startNewRound(round *big.Int) {
 	var logger log.Logger
 	if c.current == nil {
-		logger = c.logger.New("old_round", -1, "old_seq", 0)
+		logger = c.logger.New("old_round", -1, "old_seq", 0, "func", "startNewRound")
 	} else {
-		logger = c.logger.New("old_round", c.current.Round(), "old_seq", c.current.Sequence())
+		logger = c.logger.New("old_round", c.current.Round(), "old_seq", c.current.Sequence(), "func", "startNewRound")
 	}
 
 	roundChange := false
 	// Try to get last proposal
+	// TODO(asa): Consider renaming to "currentHead"
 	lastProposal, lastProposer := c.backend.LastProposal()
 	if c.current == nil {
 		logger.Trace("Start to the initial round")
@@ -326,7 +327,7 @@ func (c *core) newRoundChangeTimer() {
 	timeout := time.Duration(c.config.RequestTimeout) * time.Millisecond
 	round := c.current.Round().Uint64()
 	if round > 0 {
-		timeout += time.Duration(math.Pow(2, float64(round))) * time.Second
+		timeout += time.Duration(math.Pow(2, math.Min(float64(round), 8.))) * time.Second
 	}
 
 	c.roundChangeTimer = time.AfterFunc(timeout, func() {

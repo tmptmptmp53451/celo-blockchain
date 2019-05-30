@@ -25,7 +25,7 @@ import (
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate istanbul.RoundChangeCertificate) {
-	logger := c.logger.New("state", c.state)
+	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "sendPreprepare")
 
 	// If I'm the proposer and I have the same sequence with the proposal
 	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer() {
@@ -39,6 +39,7 @@ func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate 
 			logger.Error("Failed to encode", "view", curView)
 			return
 		}
+		logger.Trace("Sending preprepare")
 
 		c.broadcast(&istanbul.Message{
 			Code: istanbul.MsgPreprepare,
@@ -48,7 +49,7 @@ func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate 
 }
 
 func (c *core) handlePreprepare(msg *istanbul.Message, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src, "state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handlePreprepare")
 
 	// Decode PRE-PREPARE
 	var preprepare *istanbul.Preprepare
@@ -124,6 +125,7 @@ func (c *core) handlePreprepare(msg *istanbul.Message, src istanbul.Validator) e
 
 	// TODO(asa): Can we skip to COMMIT if we have a PREPARED certificate already?
 	if c.state == StateAcceptRequest {
+		logger.Trace("Accepted preprepare")
 		c.acceptPreprepare(preprepare)
 		c.setState(StatePreprepared)
 		c.sendPrepare()

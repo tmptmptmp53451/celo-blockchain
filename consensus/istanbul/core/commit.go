@@ -24,6 +24,8 @@ import (
 )
 
 func (c *core) sendCommit() {
+	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "sendCommit")
+	logger.Trace("Sending commit")
 	sub := c.current.Subject()
 	c.broadcastCommit(sub)
 }
@@ -51,6 +53,8 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 }
 
 func (c *core) handleCommit(msg *istanbul.Message, src istanbul.Validator) error {
+	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handleCommit")
+
 	// Decode COMMIT message
 	var commit *istanbul.Subject
 	err := msg.Decode(&commit)
@@ -71,6 +75,7 @@ func (c *core) handleCommit(msg *istanbul.Message, src istanbul.Validator) error
 	}
 
 	c.acceptCommit(msg, src)
+	logger.Trace("Accepted commit")
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
 	//
@@ -89,7 +94,7 @@ func (c *core) handleCommit(msg *istanbul.Message, src istanbul.Validator) error
 
 // verifyCommit verifies if the received COMMIT message is equivalent to our subject
 func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src, "state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "verifyCommit")
 
 	sub := c.current.Subject()
 	if !reflect.DeepEqual(commit, sub) {
@@ -114,7 +119,7 @@ func (c *core) verifyCommittedSeal(commit *istanbul.Subject, committedSeal []byt
 }
 
 func (c *core) acceptCommit(msg *istanbul.Message, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src, "state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "acceptCommit")
 
 	// Add the COMMIT message to current round state
 	if err := c.current.Commits.Add(msg); err != nil {
