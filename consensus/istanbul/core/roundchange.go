@@ -34,7 +34,7 @@ func (c *core) sendNextRoundChange() {
 
 // sendRoundChange sends the ROUND CHANGE message with the given round
 func (c *core) sendRoundChange(round *big.Int) {
-	logger := c.logger.New("state", c.state)
+	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "sendRoundChange", "round", round)
 
 	cv := c.currentView()
 	if cv.Round.Cmp(round) >= 0 {
@@ -70,7 +70,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 }
 
 func (c *core) handleRoundChangeCertificate(roundChangeCertificate istanbul.RoundChangeCertificate) error {
-	logger := c.logger.New("state", c.state)
+	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handleRoundChangeCertificate")
 
 	if len(roundChangeCertificate.RoundChangeMessages) > c.valSet.Size() || len(roundChangeCertificate.RoundChangeMessages) < 2*c.valSet.F()+1 {
 		return errInvalidRoundChangeCertificateNumMsgs
@@ -136,7 +136,7 @@ func (c *core) handleRoundChangeCertificate(roundChangeCertificate istanbul.Roun
 
 func (c *core) handleRoundChange(msg *istanbul.Message, src istanbul.Validator) error {
 	idx, _ := c.valSet.GetByAddress(src.Address())
-	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "from_id", idx)
+	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "from_id", idx, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handleRoundChange")
 
 	// Decode ROUND CHANGE message
 	var rc *istanbul.RoundChange
@@ -153,7 +153,7 @@ func (c *core) handleRoundChange(msg *istanbul.Message, src istanbul.Validator) 
 }
 
 func (c *core) handleDecodedCheckedRoundChange(msg *istanbul.Message, rc *istanbul.RoundChange, src istanbul.Validator) error {
-	logger := c.logger.New("state", c.state, "from", src.Address().Hex())
+	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handleDecodedCheckedRoundChange")
 
 	cv := c.currentView()
 	roundView := rc.View
