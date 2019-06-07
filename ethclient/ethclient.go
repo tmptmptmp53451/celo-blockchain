@@ -80,8 +80,8 @@ func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Bl
 
 type rpcBlock struct {
 	Hash                common.Hash      `json:"hash"`
-	Randomness          [32]byte         `json:"randomness"`
-	NewSealedRandomness [32]byte         `json:"newSealedRandomness"`
+	Randomness          common.Hash      `json:"randomness"`
+	NewSealedRandomness common.Hash      `json:"newSealedRandomness"`
 	Transactions        []rpcTransaction `json:"transactions"`
 	UncleHashes         []common.Hash    `json:"uncles"`
 }

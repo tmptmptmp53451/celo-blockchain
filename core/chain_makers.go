@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -197,7 +198,8 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 		}
 		if b.engine != nil {
 			// Finalize and seal the block
-			block, _ := b.engine.Finalize(chainreader, b.header, statedb, [32]byte{}, [32]byte{}, b.txs, b.uncles, b.receipts)
+			log.Error("%%%%%%%%%%%%%%%%%%%%%%%%")
+			block, _ := b.engine.Finalize(chainreader, b.header, statedb, common.Hash{}, common.Hash{}, b.txs, b.uncles, b.receipts)
 
 			// Write state changes to db
 			root, err := statedb.Commit(config.IsEIP158(b.header.Number))

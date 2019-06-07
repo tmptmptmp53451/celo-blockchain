@@ -132,8 +132,8 @@ func rlpHash(x interface{}) (h common.Hash) {
 // Body is a simple (mutable, non-safe) data container for storing and moving
 // a block's data contents (transactions and uncles) together.
 type Body struct {
-	Randomness          [32]byte
-	NewSealedRandomness [32]byte
+	Randomness          common.Hash
+	NewSealedRandomness common.Hash
 	Transactions        []*Transaction
 	Uncles              []*Header
 }
@@ -143,8 +143,8 @@ type Block struct {
 	header *Header
 	uncles []*Header
 
-	randomness          [32]byte
-	newSealedRandomness [32]byte
+	randomness          common.Hash
+	newSealedRandomness common.Hash
 
 	transactions Transactions
 
@@ -178,8 +178,8 @@ type StorageBlock Block
 // "external" block encoding. used for eth protocol, etc.
 type extblock struct {
 	Header              *Header
-	Randomness          [32]byte
-	NewSealedRandomness [32]byte
+	Randomness          common.Hash
+	NewSealedRandomness common.Hash
 	Txs                 []*Transaction
 	Uncles              []*Header
 }
@@ -188,8 +188,8 @@ type extblock struct {
 // "storage" block encoding. used for database.
 type storageblock struct {
 	Header              *Header
-	Randomness          [32]byte
-	NewSealedRandomness [32]byte
+	Randomness          common.Hash
+	NewSealedRandomness common.Hash
 	Txs                 []*Transaction
 	Uncles              []*Header
 	TD                  *big.Int
@@ -202,7 +202,7 @@ type storageblock struct {
 // The values of TxHash, UncleHash, ReceiptHash and Bloom in header
 // are ignored and set to values derived from the given txs, uncles
 // and receipts.
-func NewBlock(header *Header, randomness [32]byte, newSealedRandomness [32]byte, txs []*Transaction, uncles []*Header, receipts []*Receipt) *Block {
+func NewBlock(header *Header, randomness common.Hash, newSealedRandomness common.Hash, txs []*Transaction, uncles []*Header, receipts []*Receipt) *Block {
 	b := &Block{
 		header:              CopyHeader(header),
 		td:                  new(big.Int),
@@ -303,10 +303,10 @@ func (b *StorageBlock) DecodeRLP(s *rlp.Stream) error {
 
 // TODO: copies
 
-func (b *Block) Uncles() []*Header             { return b.uncles }
-func (b *Block) Randomness() [32]byte          { return b.randomness }
-func (b *Block) NewSealedRandomness() [32]byte { return b.newSealedRandomness }
-func (b *Block) Transactions() Transactions    { return b.transactions }
+func (b *Block) Uncles() []*Header                { return b.uncles }
+func (b *Block) Randomness() common.Hash          { return b.randomness }
+func (b *Block) NewSealedRandomness() common.Hash { return b.newSealedRandomness }
+func (b *Block) Transactions() Transactions       { return b.transactions }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {
 	for _, transaction := range b.transactions {
@@ -381,7 +381,7 @@ func (b *Block) WithSeal(header *Header) *Block {
 }
 
 // WithBody returns a new block with the given transaction and uncle contents.
-func (b *Block) WithBody(randomness [32]byte, newSealedRandomness [32]byte, transactions []*Transaction, uncles []*Header) *Block {
+func (b *Block) WithBody(randomness common.Hash, newSealedRandomness common.Hash, transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
 		header:              CopyHeader(b.header),
 		randomness:          randomness,

@@ -18,7 +18,7 @@ package miner
 
 import (
 	"bytes"
-	"crypto/rand"
+	// "crypto/rand"
 	"errors"
 	"math/big"
 	"sync"
@@ -96,8 +96,8 @@ type environment struct {
 	receipts []*types.Receipt
 
 	// For randomness
-	randomness          [32]byte
-	newSealedRandomness [32]byte
+	randomness          common.Hash
+	newSealedRandomness common.Hash
 }
 
 // task contains all information for consensus engine sealing and result submitting.
@@ -1022,33 +1022,42 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	randomAddress := w.eth.RegisteredAddresses().GetRegisteredAddress("Random")
 
 	if randomAddress != nil && *randomAddress != nullAddress {
-		dbPrefix := []byte{0x12, 0x34, 0x56, 0x78, 0x90}
-		previousNumberBytes := new(big.Int).Sub(w.current.header.Number, big.NewInt(1)).Bytes()
-		dbLocation := append(dbPrefix, previousNumberBytes...)
-		randomness := [32]byte{}
-		randomnessSlice, err := (*w.db).Get(dbLocation)
-		if err != nil {
-			log.Debug("Failed to get randomness from database")
-		} else {
-			log.Debug("Got randomness from db", "randomnessSlice", randomnessSlice)
-			copy(randomness[:], randomnessSlice)
-		}
+		/*
+			dbPrefix := []byte{0x12, 0x34, 0x56, 0x78, 0x90}
+			previousNumberBytes := new(big.Int).Sub(w.current.header.Number, big.NewInt(1)).Bytes()
+			dbLocation := append(dbPrefix, previousNumberBytes...)
+			randomness := [32]byte{}
+			randomnessSlice, err := (*w.db).Get(dbLocation)
+			if err != nil {
+				log.Debug("First time committing, choosing random randomenss")
 
-		newRandomness := [32]byte{}
-		_, err = rand.Read(newRandomness[0:32])
-		if err != nil {
-			log.Error("Failed to generate randomness")
-		}
+				_, err = rand.Read(randomness[0:32])
+			} else {
+				log.Debug("Got randomness from db", "randomnessSlice", randomnessSlice)
+				copy(randomness[:], randomnessSlice)
+			}
+
+			newRandomness := [32]byte{}
+			_, err = rand.Read(newRandomness[0:32])
+
+			if err != nil {
+				log.Error("Failed to generate randomness")
+			}
+		*/
+		randomness := common.BytesToHash([]byte{1})
+		newRandomness := common.BytesToHash([]byte{2})
 
 		w.current.randomness = randomness
 		w.current.newSealedRandomness = newRandomness
-		err = w.eth.Random().RevealAndCommit(randomness, newRandomness, w.coinbase, *randomAddress, w.current.header, w.current.state)
-		numberBytes := w.current.header.Number.Bytes()
-		dbLocation = append(dbPrefix, numberBytes...)
-		(*w.db).Put(dbLocation, newRandomness[:])
-		if err != nil {
-			log.Error("Failed to reveal and commit", "err", err)
-		}
+		err = w.eth.Random().RevealAndCommit(w.current.randomness, w.current.newSealedRandomness, w.coinbase, *randomAddress, w.current.header, w.current.state)
+		/*
+			numberBytes := w.current.header.Number.Bytes()
+			dbLocation = append(dbPrefix, numberBytes...)
+			(*w.db).Put(dbLocation, newRandomness[:])
+			if err != nil {
+				log.Error("Failed to reveal and commit", "err", err)
+			}
+		*/
 	}
 
 	w.updateSnapshot()

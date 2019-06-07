@@ -19,6 +19,7 @@ package downloader
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -45,8 +46,8 @@ func (p *headerPack) Stats() string  { return fmt.Sprintf("%d", len(p.headers)) 
 // bodyPack is a batch of block bodies returned by a peer.
 type bodyPack struct {
 	peerID              string
-	randomness          [][32]byte
-	newSealedRandomness [][32]byte
+	randomness          []common.Hash
+	newSealedRandomness []common.Hash
 	transactions        [][]*types.Transaction
 	uncles              [][]*types.Header
 }

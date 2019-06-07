@@ -741,6 +741,7 @@ func (bc *BlockChain) procFutureBlocks() {
 
 		// Insert one by one as chain insertion needs contiguous ancestry between blocks
 		for i := range blocks {
+			log.Debug("procFutureBlocks")
 			bc.InsertChain(blocks[i : i+1])
 		}
 	}
@@ -1075,12 +1076,14 @@ func (bc *BlockChain) addFutureBlock(block *types.Block) error {
 //
 // After insertion is done, all accumulated events will be fired.
 func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
+	log.Debug("InsertChain", "block", chain[0], "header", chain[0].Header())
 	// Sanity check that we have something meaningful to import
 	if len(chain) == 0 {
 		return 0, nil
 	}
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 1; i < len(chain); i++ {
+		log.Debug("Block in InsertChain", "block", chain[i], "number", chain[i].Header().Number)
 		if chain[i].NumberU64() != chain[i-1].NumberU64()+1 || chain[i].ParentHash() != chain[i-1].Hash() {
 			// Chain broke ancestry, log a message (programming error) and skip insertion
 			log.Error("Non contiguous block insert", "number", chain[i].Number(), "hash", chain[i].Hash(),
@@ -1205,6 +1208,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 		}
 		// Process block using the parent state as reference point.
 		t0 := time.Now()
+		log.Debug("INSERT CHAIN", "block", block)
 		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
 		t1 := time.Now()
 		if err != nil {

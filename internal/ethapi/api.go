@@ -869,26 +869,30 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // transaction hashes.
 func RPCMarshalBlock(b *types.Block, inclTx bool, fullTx bool) (map[string]interface{}, error) {
 	head := b.Header() // copies the header once
+	r := b.Randomness()
+	nsr := b.NewSealedRandomness()
 	// TODO(asa): Consider removing parentHash
 	fields := map[string]interface{}{
-		"number":           (*hexutil.Big)(head.Number),
-		"hash":             b.Hash(),
-		"parentHash":       head.ParentHash,
-		"nonce":            head.Nonce,
-		"mixHash":          head.MixDigest,
-		"sha3Uncles":       head.UncleHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
-		"difficulty":       (*hexutil.Big)(head.Difficulty),
-		"extraData":        hexutil.Bytes(head.Extra),
-		"size":             hexutil.Uint64(b.Size()),
-		"gasLimit":         hexutil.Uint64(head.GasLimit),
-		"gasUsed":          hexutil.Uint64(head.GasUsed),
-		"timestamp":        (*hexutil.Big)(head.Time),
-		"transactionsRoot": head.TxHash,
-		"receiptsRoot":     head.ReceiptHash,
-		"signature":        hexutil.Bytes(common.CopyBytes(head.Signature[:])),
+		"number":              (*hexutil.Big)(head.Number),
+		"hash":                b.Hash(),
+		"parentHash":          head.ParentHash,
+		"nonce":               head.Nonce,
+		"mixHash":             head.MixDigest,
+		"sha3Uncles":          head.UncleHash,
+		"logsBloom":           head.Bloom,
+		"stateRoot":           head.Root,
+		"miner":               head.Coinbase,
+		"difficulty":          (*hexutil.Big)(head.Difficulty),
+		"extraData":           hexutil.Bytes(head.Extra),
+		"size":                hexutil.Uint64(b.Size()),
+		"gasLimit":            hexutil.Uint64(head.GasLimit),
+		"gasUsed":             hexutil.Uint64(head.GasUsed),
+		"timestamp":           (*hexutil.Big)(head.Time),
+		"transactionsRoot":    head.TxHash,
+		"receiptsRoot":        head.ReceiptHash,
+		"signature":           hexutil.Bytes(common.CopyBytes(head.Signature[:])),
+		"randomness":          hexutil.Bytes(r[:]),
+		"newSealedRandomness": hexutil.Bytes(nsr[:]),
 	}
 
 	if inclTx {

@@ -100,6 +100,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	randomAddress := p.regAdd.GetRegisteredAddress("Random")
 	nullAddress := common.BigToAddress(big.NewInt(0))
 
+	log.Debug("=================", "randomness", block.Randomness(), "newSealedRandomness", block.NewSealedRandomness(), "coinbase", header.Coinbase, "number", header.Number)
+
 	if randomAddress != nil && *randomAddress != nullAddress {
 		err := p.random.RevealAndCommit(block.Randomness(), block.NewSealedRandomness(), header.Coinbase, *randomAddress, header, statedb)
 		if err != nil {

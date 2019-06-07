@@ -1480,12 +1480,17 @@ func headersToNumbers(headers []*types.Header) []*big.Int {
 func (d *Downloader) processFullSyncContent() error {
 	for {
 		results := d.queue.Results(true)
+		log.Debug("in processFullSyncContent", "results", results)
+		for _, result := range results {
+			log.Debug("result in processFullSyncContent", "randomness", result.Randomness, "number", result.Header.Number)
+		}
 		if len(results) == 0 {
 			return nil
 		}
 		if d.chainInsertHook != nil {
 			d.chainInsertHook(results)
 		}
+		log.Debug("Calling importBlockResults from processFullSyncContent")
 		if err := d.importBlockResults(results); err != nil {
 			return err
 		}
@@ -1510,8 +1515,10 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	)
 	blocks := make([]*types.Block, len(results))
 	for i, result := range results {
+		log.Debug("result in importBlockResults", "randomness", result.Randomness, "number", result.Header.Number)
 		blocks[i] = types.NewBlockWithHeader(result.Header).WithBody(result.Randomness, result.NewSealedRandomness, result.Transactions, result.Uncles)
 	}
+	log.Debug("importBlockResults")
 	if index, err := d.blockchain.InsertChain(blocks); err != nil {
 		if index < len(results) {
 			log.Debug("Downloaded item processing failed", "number", results[index].Header.Number, "hash", results[index].Header.Hash(), "err", err)
@@ -1616,6 +1623,7 @@ func (d *Downloader) processFastSyncContent(latest *types.Header) error {
 			}
 		}
 		// Fast sync done, pivot commit done, full import
+		log.Debug("Calling importBlockResults from processFastSyncContent")
 		if err := d.importBlockResults(afterP); err != nil {
 			return err
 		}
@@ -1690,7 +1698,7 @@ func (d *Downloader) DeliverHeaders(id string, headers []*types.Header) (err err
 }
 
 // DeliverBodies injects a new batch of block bodies received from a remote node.
-func (d *Downloader) DeliverBodies(id string, randomness [][32]byte, newSealedRandomness [][32]byte, transactions [][]*types.Transaction, uncles [][]*types.Header) (err error) {
+func (d *Downloader) DeliverBodies(id string, randomness []common.Hash, newSealedRandomness []common.Hash, transactions [][]*types.Transaction, uncles [][]*types.Header) (err error) {
 	return d.deliver(id, d.bodyCh, &bodyPack{id, randomness, newSealedRandomness, transactions, uncles}, bodyInMeter, bodyDropMeter)
 }
 

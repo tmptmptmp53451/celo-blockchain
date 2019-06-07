@@ -55,6 +55,13 @@ const (
 	minBroadcastPeers = 4
 )
 
+type extblock struct {
+	Randomness          common.Hash
+	NewSealedRandomness common.Hash
+	Txs                 []*types.Transaction
+	Uncles              []*types.Header
+}
+
 var (
 	daoChallengeTimeout = 15 * time.Second // Time allowance for a node to reply to the DAO handshake challenge
 )
@@ -190,6 +197,7 @@ func NewProtocolManager(config *params.ChainConfig, mode downloader.SyncMode, ne
 			return 0, nil
 		}
 		atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
+		log.Debug("inserter")
 		return manager.blockchain.InsertChain(blocks)
 	}
 	manager.fetcher = fetcher.New(blockchain.GetBlockByHash, validator, manager.BroadcastBlock, heighter, inserter, manager.removePeer)
@@ -540,25 +548,37 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 			}
 			// Retrieve the requested block body, stopping if enough was found
 			if data := pm.blockchain.GetBodyRLP(hash); len(data) != 0 {
+				body := pm.blockchain.GetBody(hash)
+				if err != nil {
+					log.Error("balls", "err", err)
+				} else {
+					log.Debug("Body with hash", "hash", hash.Hex(), "body", body)
+				}
 				bodies = append(bodies, data)
 				bytes += len(data)
 			}
 		}
+		hash1 := "0x965ad9a46d701ca070be981d80fccf802ecec8c48f33049993724bca22d1df20"
+		body1 := pm.blockchain.GetBody(common.HexToHash(hash1))
+		log.Debug("====================", "body", body1)
 		return p.SendBlockBodiesRLP(bodies)
 
 	case msg.Code == BlockBodiesMsg:
+		log.Debug("CODES", "BlockBodiesMsg", BlockBodiesMsg)
 		// A batch of block bodies arrived to one of our previous requests
 		var request blockBodiesData
 		if err := msg.Decode(&request); err != nil {
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
+		log.Debug("??????????????? Got BlockBodiesMsg", "request", request)
 		// Deliver them all to the downloader for queuing
-		randomness := make([][32]byte, len(request))
-		newSealedRandomness := make([][32]byte, len(request))
+		randomness := make([]common.Hash, len(request))
+		newSealedRandomness := make([]common.Hash, len(request))
 		transactions := make([][]*types.Transaction, len(request))
 		uncles := make([][]*types.Header, len(request))
 
 		for i, body := range request {
+			log.Debug("!!!!!!!!!!!!!!!!!!", "randomness", body.Randomness, "newSealedRandomness", body.NewSealedRandomness, "transactions", body.Transactions)
 			randomness[i] = body.Randomness
 			newSealedRandomness[i] = body.NewSealedRandomness
 			transactions[i] = body.Transactions
@@ -683,6 +703,7 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 
 	case msg.Code == NewBlockMsg:
+		log.Debug("NewBlockMsg")
 		// Retrieve and decode the propagated block
 		var request newBlockData
 		if err := msg.Decode(&request); err != nil {
@@ -690,6 +711,8 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		}
 		request.Block.ReceivedAt = msg.ReceivedAt
 		request.Block.ReceivedFrom = p
+
+		log.Debug("NEW BLOCK", "block", request.Block, "number", request.Block.Header().Number)
 
 		// Mark the peer as owning the block and schedule it for import
 		p.MarkBlock(request.Block.Hash())

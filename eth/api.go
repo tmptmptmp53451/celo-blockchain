@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -240,6 +241,7 @@ func (api *PrivateAdminAPI) ImportChain(file string) (bool, error) {
 			continue
 		}
 		// Import the batch and reset the buffer
+		log.Debug("ImportChain")
 		if _, err := api.eth.BlockChain().InsertChain(blocks); err != nil {
 			return false, fmt.Errorf("batch %d: failed to insert: %v", batch, err)
 		}

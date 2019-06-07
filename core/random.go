@@ -54,9 +54,9 @@ func NewRandom(iEvmH *InternalEVMHandler) *Random {
 	return r
 }
 
-func (r *Random) RevealAndCommit(randomness [32]byte, newSealedRandomness [32]byte, proposer common.Address, address common.Address, header *types.Header, state *state.StateDB) error {
+func (r *Random) RevealAndCommit(randomness common.Hash, newSealedRandomness common.Hash, proposer common.Address, address common.Address, header *types.Header, state *state.StateDB) error {
 	log.Debug("Calling to revealAndCommit", "randomness", randomness, "newSealedRandomness", newSealedRandomness, "proposer", proposer)
-	_, err := r.iEvmH.MakeCall(address, revealAndCommitFuncABI, "revealAndCommit", []interface{}{randomness, newSealedRandomness, proposer}, []interface{}{}, 100000, big.NewInt(0), header, state)
+	_, err := r.iEvmH.MakeCall(address, revealAndCommitFuncABI, "revealAndCommit", []interface{}{randomness, newSealedRandomness, proposer}, []interface{}{}, 1000000, big.NewInt(0), header, state)
 	if err != nil {
 		log.Error("MakeCall failed", "err", err)
 		return err

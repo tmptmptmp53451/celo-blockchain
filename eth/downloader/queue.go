@@ -59,8 +59,8 @@ type fetchResult struct {
 
 	Header              *types.Header
 	Uncles              []*types.Header
-	Randomness          [32]byte
-	NewSealedRandomness [32]byte
+	Randomness          common.Hash
+	NewSealedRandomness common.Hash
 	Transactions        types.Transactions
 	Receipts            types.Receipts
 }
@@ -369,6 +369,7 @@ func (q *queue) Results(block bool) []*fetchResult {
 		nproc = maxResultsProcess
 	}
 	results := make([]*fetchResult, nproc)
+	log.Debug("In Queue Results", "results", results)
 	copy(results, q.resultCache[:nproc])
 	if len(results) > 0 {
 		// Mark results as done before dropping them from the cache.
@@ -389,7 +390,7 @@ func (q *queue) Results(block bool) []*fetchResult {
 		for _, result := range results {
 			size := result.Header.Size()
 			// Size of randomness and newSealedRandomness
-			size += 32 + 32
+			size += 32 + 32 + 32
 			for _, uncle := range result.Uncles {
 				size += uncle.Size()
 			}
@@ -767,11 +768,12 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 // DeliverBodies injects a block body retrieval response into the results queue.
 // The method returns the number of blocks bodies accepted from the delivery and
 // also wakes any threads waiting for data delivery.
-func (q *queue) DeliverBodies(id string, randomness [][32]byte, newSealedRandomness [][32]byte, txLists [][]*types.Transaction, uncleLists [][]*types.Header) (int, error) {
+func (q *queue) DeliverBodies(id string, randomness []common.Hash, newSealedRandomness []common.Hash, txLists [][]*types.Transaction, uncleLists [][]*types.Header) (int, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 
 	reconstruct := func(header *types.Header, index int, result *fetchResult) error {
+		log.Debug("Reconstructing in DeliverBodies", "randomness", randomness[index], "number", header.Number)
 		if types.DeriveSha(types.Transactions(txLists[index])) != header.TxHash || types.CalcUncleHash(uncleLists[index]) != header.UncleHash {
 			return errInvalidBody
 		}
@@ -792,6 +794,7 @@ func (q *queue) DeliverReceipts(id string, receiptList [][]*types.Receipt) (int,
 	defer q.lock.Unlock()
 
 	reconstruct := func(header *types.Header, index int, result *fetchResult) error {
+		log.Debug("Reconstructing in DeliverReceipts", "randomness", result.Randomness, "number", header.Number)
 		if types.DeriveSha(types.Receipts(receiptList[index])) != header.ReceiptHash {
 			return errInvalidReceipt
 		}

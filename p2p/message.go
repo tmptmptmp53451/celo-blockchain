@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -50,6 +51,7 @@ type Msg struct {
 // For the decoding rules, please see package rlp.
 func (msg Msg) Decode(val interface{}) error {
 	s := rlp.NewStream(msg.Payload, uint64(msg.Size))
+	log.Debug("In DECODE", "code", msg.Code, "size", msg.Size)
 	if err := s.Decode(val); err != nil {
 		return newPeerError(errInvalidMsg, "(code %x) (size %d) %v", msg.Code, msg.Size, err)
 	}

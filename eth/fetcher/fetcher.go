@@ -92,8 +92,8 @@ type headerFilterTask struct {
 // needing fetcher filtering.
 type bodyFilterTask struct {
 	peer                string                 // The source peer of block bodies
-	randomness          [][32]byte             // Collection of randomness per block bodies
-	newSealedRandomness [][32]byte             // Collection of new sealed randomness per block bodies
+	randomness          []common.Hash          // Collection of randomness per block bodies
+	newSealedRandomness []common.Hash          // Collection of new sealed randomness per block bodies
 	transactions        [][]*types.Transaction // Collection of transactions per block bodies
 	uncles              [][]*types.Header      // Collection of uncles per block bodies
 	time                time.Time              // Arrival time of the blocks' contents
@@ -250,7 +250,7 @@ func (f *Fetcher) FilterHeaders(peer string, headers []*types.Header, time time.
 
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
-func (f *Fetcher) FilterBodies(peer string, randomness [][32]byte, newSealedRandomness [][32]byte, transactions [][]*types.Transaction, uncles [][]*types.Header, time time.Time) ([][32]byte, [][32]byte, [][]*types.Transaction, [][]*types.Header) {
+func (f *Fetcher) FilterBodies(peer string, randomness []common.Hash, newSealedRandomness []common.Hash, transactions [][]*types.Transaction, uncles [][]*types.Header, time time.Time) ([]common.Hash, []common.Hash, [][]*types.Transaction, [][]*types.Header) {
 	log.Trace("Filtering bodies",
 		"peer", peer,
 		"randomness", randomness,
@@ -531,7 +531,7 @@ func (f *Fetcher) loop() {
 			bodyFilterInMeter.Mark(int64(len(task.transactions)))
 
 			blocks := []*types.Block{}
-			for i := 0; i < len(task.randomness) && i < len(task.transactions) && i < len(task.uncles); i++ {
+			for i := 0; i < len(task.newSealedRandomness) && i < len(task.randomness) && i < len(task.transactions) && i < len(task.uncles); i++ {
 				// Match up a body to any possible completion request
 				matched := false
 
@@ -688,6 +688,7 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			return
 		}
 		// Run the actual import and log any issues
+		log.Debug("FETCHER INSERT", "block", block)
 		if _, err := f.insertChain(types.Blocks{block}); err != nil {
 			log.Debug("Propagated block import failed", "peer", peer, "number", block.Number(), "hash", hash, "err", err)
 			return

@@ -1,0 +1,92 @@
+abe/
+  generating, sending verification smses
+consensus/
+  istanbul, etc.
+core/
+  evm
+crypto/
+  hash, ecc, etc.
+eth/
+  
+ethdb/
+miner/
+  block creation
+
+where does a proposer create a block?
+  miner/worker.go commit
+where does a full node start running through transactions?
+core/state_processor Process
+looks like it runs through transactions in commit if it's proposing the block
+
+where/how should we persist randomness for future block creation?
+for logic - in worker struct
+persistently: leveldb (istanbul snapshot)
+
+
+proposer most likely will be in Coinbase
+
+eth/backend.go
+will create the worker, can pass ethdb to it here
+
+integration tests in celotool 
+
+
+StateProcessor has a registeredAddresses field
+Can make Call the same way StateProcessor would when invoking
+ApplyTransaction
+
+worker has Backend field that has registeredAddresses
+
+Need to make a state modifying call, `makeCall` does static calls
+
+Look at how debitFrom/creditTo makes calls, that modifies state.
+
+
+When modifying stuff in state transition, we grab st's evm. We shouold probably
+use the same evm that is used when doing a transition for a transaction we're
+putting into a block?
+
+Or maybe write something like ApplyTransaction that does the randomness stuff?
+
+The EVM in ApplyMessage is created in ApplyTransaction
+It uses a state db that's passed in. Let's pass in the same state db that's
+passed in by miner/worker?
+
+How are EVM type values constructed and passed into the evm?
+accounts/abi does reflection and type checks based on parsed ABI. [32]byte works
+for bytes32
+
+Figure out passing in arguments!
+
+Now need to manage randomness.
+
+
+1. If no randomness committed, just commit new. Use 0 as randomness.
+
+TODO: follow conventions set by whitelist, registered addresses. (Refresh, keep
+address within, not passing from outside?)
+Error handling
+
+Where is the Validator's address? Must be available somewhere since we verify
+that validators come from the validator list
+
+Right now failing because don't save last randomness over restarts. Need to
+store it in DB.
+Most likely need to pass DB 
+Is this the same DB as used for worker.current.state?
+
+Add revealAndCommit to state_processor Process before transactions ran
+
+First make sure randomness even is available in the block
+Why is it not when the transactions list is empty?
+
+For storing randomness: store prefix+sealedRandomness -> randomness, lookup last
+sealedRandomness from smart contract
+
+TODO: RPC/web3 - pass randomness?
+
+
+1. Refactor
+2. Use randomness from last proposed block, verify with multiple validators
+3. Hash
+4. Tests

@@ -26,6 +26,7 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -249,6 +250,8 @@ func (p *peer) AsyncSendNewBlockHash(block *types.Block) {
 
 // SendNewBlock propagates an entire block to a remote peer.
 func (p *peer) SendNewBlock(block *types.Block, td *big.Int) error {
+	log.Debug("In SendNewBlock", "block", block)
+
 	p.knownBlocks.Add(block.Hash())
 	return p2p.Send(p.rw, NewBlockMsg, []interface{}{block, td})
 }
@@ -256,6 +259,7 @@ func (p *peer) SendNewBlock(block *types.Block, td *big.Int) error {
 // AsyncSendNewBlock queues an entire block for propagation to a remote peer. If
 // the peer's broadcast queue is full, the event is silently dropped.
 func (p *peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
+	log.Debug("In SendAsyncNewBlock", "block", block)
 	select {
 	case p.queuedProps <- &propEvent{block: block, td: td}:
 		p.knownBlocks.Add(block.Hash())
@@ -271,12 +275,24 @@ func (p *peer) SendBlockHeaders(headers []*types.Header) error {
 
 // SendBlockBodies sends a batch of block contents to the remote peer.
 func (p *peer) SendBlockBodies(bodies []*blockBody) error {
+	log.Debug("In SendBlockBodies")
+	for _, body := range bodies {
+		log.Debug("block body", "body", body)
+	}
+
 	return p2p.Send(p.rw, BlockBodiesMsg, blockBodiesData(bodies))
 }
 
 // SendBlockBodiesRLP sends a batch of block contents to the remote peer from
 // an already RLP encoded format.
 func (p *peer) SendBlockBodiesRLP(bodies []rlp.RawValue) error {
+	log.Debug("In SendBlockBodiesRLP")
+	for _, body := range bodies {
+		var result blockBody
+		err := rlp.DecodeBytes(body, &result)
+		log.Debug("block body", "body", body, "result", result, "err", err)
+	}
+
 	return p2p.Send(p.rw, BlockBodiesMsg, bodies)
 }
 

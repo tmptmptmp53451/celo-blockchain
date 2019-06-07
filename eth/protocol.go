@@ -175,8 +175,8 @@ type newBlockData struct {
 
 // blockBody represents the data content of a single block.
 type blockBody struct {
-	Randomness          [32]byte             // Randomness contained within a block
-	NewSealedRandomness [32]byte             // New sealed randomness contained within a block
+	Randomness          common.Hash          // Randomness contained within a block
+	NewSealedRandomness common.Hash          // New sealed randomness contained within a block
 	Transactions        []*types.Transaction // Transactions contained within a block
 	Uncles              []*types.Header      // Uncles contained within a block
 }
