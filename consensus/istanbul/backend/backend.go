@@ -130,6 +130,25 @@ func (sb *Backend) Broadcast(valSet istanbul.ValidatorSet, payload []byte) error
 	return nil
 }
 
+func (sb *Backend) GetPreProcessingNativeTransactions(getNonce func(common.Address) uint64) (types.Transactions, error) {
+	var txs types.Transactions
+	from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+	nonce := getNonce(from)
+	to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
+	amount := big.NewInt(10)
+	gasLimit := uint64(100000000)
+	gasPrice := big.NewInt(0)
+	var data []byte
+	tx := types.NewNativeTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+	txs = append(txs, tx)
+	return txs, nil
+}
+
+func (sb *Backend) GetPostProcessingNativeTransactions() (types.Transactions, error) {
+	var txs types.Transactions
+	return txs, nil
+}
+
 // Gossip implements istanbul.Backend.Gossip
 func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, payload []byte) error {
 	hash := istanbul.RLPHash(payload)
@@ -238,46 +257,128 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 	err := sb.VerifyHeader(sb.chain, block.Header(), false)
 
 	// ignore errEmptyCommittedSeals error because we don't have the committed seals yet
-	if err == nil || err == errEmptyCommittedSeals {
-		return 0, nil
-	} else if err == consensus.ErrFutureBlock {
-		return time.Unix(block.Header().Time.Int64(), 0).Sub(now()), consensus.ErrFutureBlock
-	}
-
-	// Process the block to verify that the transactions are valid and to retrieve the resulting state and receipts
-	// Get the state from this block's parent.
-	state, err := sb.stateAt(block.Header().ParentHash)
-	if err != nil {
-		log.Error("verify - Error in getting the block's parent's state", "parentHash", block.Header().ParentHash)
-		return 0, err
-	}
-
-	// Make a copy of the state
-	state = state.Copy()
-
-	// Can validate well formed native transactions in here, or in core/state_processor.go Process()
-
-	// Apply this block's transactions to update the state
-	receipts, _, usedGas, err := sb.processBlock(block, state)
-	if err != nil {
-		log.Error("verify - Error in processing the block")
-		return 0, err
-	}
-
-	// Validate the block
-	if err := sb.validateState(block, state, receipts, usedGas); err != nil {
-		log.Error("verify - Error in validating the block")
-		return 0, err
-	}
-
-	// verify the validator set diff if this is the last block of the epoch
-	if istanbul.IsLastBlockOfEpoch(block.Header().Number.Uint64(), sb.config.Epoch) {
-		if err := sb.verifyValSetDiff(proposal, block, state); err != nil {
+	if err != nil && err != errEmptyCommittedSeals {
+		if err == consensus.ErrFutureBlock {
+			return time.Unix(block.Header().Time.Int64(), 0).Sub(now()), consensus.ErrFutureBlock
+		} else {
 			return 0, err
 		}
 	}
 
+	// TODO(asa): Note that this will only be run by validating nodes, and not necessarily all full
+	// nodes.
+	err = sb.verifyTransactions(block)
+	if err != nil {
+		log.Error("verify - Error in verifying transactions")
+		return 0, err
+	}
+
+	// TODO(asa): Apparently none of this works because stateAt isn't what we need it to be.
+	/*
+		// Process the block to verify that the transactions are valid and to retrieve the resulting state and receipts
+		// Get the state from this block's parent.
+		state, err := sb.stateAt(block.Header().ParentHash)
+		if err != nil {
+			log.Error("verify - Error in getting the block's parent's state", "parentHash", block.Header().ParentHash, "err", err)
+			return 0, err
+		}
+
+		// Make a copy of the state
+		state = state.Copy()
+
+		// Apply this block's transactions to update the state
+		receipts, _, usedGas, err := sb.processBlock(block, state)
+		if err != nil {
+			log.Error("verify - Error in processing the block")
+			return 0, err
+		}
+
+		// Validate the block
+		if err := sb.validateState(block, state, receipts, usedGas); err != nil {
+			log.Error("verify - Error in validating the block")
+			return 0, err
+		}
+
+		// verify the validator set diff if this is the last block of the epoch
+		if istanbul.IsLastBlockOfEpoch(block.Header().Number.Uint64(), sb.config.Epoch) {
+			if err := sb.verifyValSetDiff(proposal, block, state); err != nil {
+				return 0, err
+			}
+		}
+	*/
+
 	return 0, err
+}
+
+func (sb *Backend) verifyTransactions(block *types.Block) error {
+	body := block.Body()
+	// We don't need to verify the transaction nonce explicitly.
+	getNonce := func(_ common.Address) uint64 {
+		return 0
+	}
+
+	nativePreProcessingTxs, err := sb.GetPreProcessingNativeTransactions(getNonce)
+	if err != nil {
+		return err
+	}
+
+	nativePostProcessingTxs, err := sb.GetPostProcessingNativeTransactions()
+	if err != nil {
+		return err
+	}
+
+	if len(body.Transactions) < len(nativePreProcessingTxs)+len(nativePostProcessingTxs) {
+		return errInvalidNativeTransactions
+	}
+
+	for i, tx := range nativePreProcessingTxs {
+		bodyTx := body.Transactions[i]
+		if err := sb.verifyNativeTransaction(tx, bodyTx); err != nil {
+			return err
+		}
+	}
+
+	postProcessingNativeTransactionsStartIndex := len(body.Transactions) - len(nativePostProcessingTxs)
+	for i, tx := range nativePostProcessingTxs {
+		bodyTx := body.Transactions[postProcessingNativeTransactionsStartIndex+i]
+		if err := sb.verifyNativeTransaction(tx, bodyTx); err != nil {
+			return err
+		}
+	}
+
+	// All other transactions should be non-native.
+	for i := len(nativePreProcessingTxs); i < postProcessingNativeTransactionsStartIndex; i++ {
+		if body.Transactions[i].Native() {
+			return errInvalidNativeTransactions
+		}
+	}
+
+	return nil
+}
+
+func (sb *Backend) verifyNativeTransaction(expected, actual *types.Transaction) error {
+	if expected.Gas() != actual.Gas() {
+		return errInvalidNativeTransactions
+	}
+
+	// Verify the expected native transaction data is a prefix of the actual transaction data.
+	// For most transactions, they should be equal, but for some native transactions we can't check
+	// the entire transaction data (e.g. Random.CommitAndRevealNewRandomness)
+	if len(expected.Data()) > len(actual.Data()) {
+		return errInvalidNativeTransactions
+	}
+
+	for i := range expected.Data() {
+		if expected.Data()[i] != actual.Data()[i] {
+			return errInvalidNativeTransactions
+		}
+	}
+
+	if expected.Value().Cmp(actual.Value()) != 0 {
+		return errInvalidNativeTransactions
+	}
+
+	return nil
 }
 
 func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Block, state *state.StateDB) error {

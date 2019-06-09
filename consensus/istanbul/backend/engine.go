@@ -83,6 +83,8 @@ var (
 	errMismatchTxhashes = errors.New("mismatch transactions hashes")
 	// errInvalidValidatorSetDiff is returned if the header contains invalid validator set diff
 	errInvalidValidatorSetDiff = errors.New("invalid validator set diff")
+	// errInvalidNativeTransactions is returned if the block contains invalid native transactions
+	errInvalidNativeTransactions = errors.New("invalid native transactions")
 
 	// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/Validators.json
 	getValidatorsABI = `[{"constant": true,

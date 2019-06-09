@@ -193,6 +193,7 @@ func (tx *Transaction) GasFeeRecipient() *common.Address { return tx.data.GasFee
 func (tx *Transaction) Value() *big.Int                  { return new(big.Int).Set(tx.data.Amount) }
 func (tx *Transaction) Nonce() uint64                    { return tx.data.AccountNonce }
 func (tx *Transaction) CheckNonce() bool                 { return true }
+func (tx *Transaction) Native() bool                     { return tx.data.Native }
 
 // To returns the recipient address of the transaction.
 // It returns nil if the transaction is a contract creation.
