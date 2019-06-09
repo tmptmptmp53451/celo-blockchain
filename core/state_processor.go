@@ -18,13 +18,16 @@ package core
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	// "github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	// "math/big"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -66,6 +69,7 @@ func (p *StateProcessor) SetRegisteredAddresses(regAdd *RegisteredAddresses) {
 // returns the amount of gas that was used in the process. If any of the
 // transactions failed to execute due to insufficient gas it will return an error.
 func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg vm.Config) (types.Receipts, []*types.Log, uint64, error) {
+	log.Info("Processing block")
 	var (
 		receipts types.Receipts
 		usedGas  = new(uint64)
@@ -88,10 +92,34 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		p.gcWl.RefreshWhitelist()
 	}
 
-	// Iterate over and process the individual transactions
+	/*
+		// TODO(asa): Create transaction here.
+		// from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+		nonce := statedb.GetNonce(common.HexToAddress("0x0000000000000000000000000000000000000000"))
+		// to := sb.regAdd.
+		to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
+		amount := big.NewInt(0)
+		gasLimit := uint64(100000)
+		gasPrice := big.NewInt(0)
+		functionSelector := hexutil.MustDecode("0x9951b90c")
+		address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
+		value := big.NewInt(10)
+		data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
+		tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+		log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
+		// gp := new(core.GasPool).AddGas(gasLimit * 2)
+		// receipt, _, err := core.ApplyTransaction(sb.chain.Config(), chain, &from, gp, state, header, tx, 0, vm.Config{}, nil, nil)
+		txs := block.Transactions()
+		txs = append(txs, tx)
+
+		header.Root = statedb.IntermediateRoot(p.config.IsEIP158(header.Number))
+		header.TxHash = types.DeriveSha(types.Transactions(txs))
+		// Iterate over and process the individual transactions
+	*/
+
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
-		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg, p.gcWl, p.regAdd)
+		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg, p.gcWl, p.regAdd, false)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -108,8 +136,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, gcWl *GasCurrencyWhitelist, regAdd *RegisteredAddresses) (*types.Receipt, uint64, error) {
-	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number))
+func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, gcWl *GasCurrencyWhitelist, regAdd *RegisteredAddresses, nativeTransaction bool) (*types.Receipt, uint64, error) {
+	msg, err := tx.AsMessage(types.MakeSigner(config, header.Number), nativeTransaction)
+	log.Info("TxMessageGas", "gas", msg.Gas())
 	if err != nil {
 		return nil, 0, err
 	}

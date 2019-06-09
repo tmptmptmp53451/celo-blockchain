@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/abe"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	// "github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
@@ -761,7 +762,7 @@ func (w *worker) updateSnapshot() {
 func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address) ([]*types.Log, error) {
 	snap := w.current.state.Snapshot()
 
-	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses())
+	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), false)
 	if err != nil {
 		w.current.state.RevertToSnapshot(snap)
 		return nil, err
@@ -1061,10 +1062,39 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		if err := istanbul.UpdateValSetDiff(w.chain, w.current.header, s); err != nil {
 			return err
 		}
+		if false {
+			// from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+			nonce := w.current.state.GetNonce(common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96"))
+			// to := sb.regAdd.
+			to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
+			amount := big.NewInt(10)
+			gasLimit := uint64(100000000)
+			gasPrice := big.NewInt(0)
+			snap := w.current.state.Snapshot()
+			// functionSelector := hexutil.MustDecode("0x9951b90c")
+			// address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
+			// value := big.NewInt(10)
+			// data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
+			var data []byte
+			tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+			log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
+
+			coinbase := w.coinbase
+			receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), true)
+			if err != nil {
+				log.Info("Failed to apply transaction", "err", err)
+				w.current.state.RevertToSnapshot(snap)
+				return err
+			}
+			w.current.txs = append(w.current.txs, tx)
+			w.current.receipts = append(w.current.receipts, receipt)
+			receipts = append(receipts, receipt)
+		}
 	}
 
 	block, err := w.engine.Finalize(w.chain, w.current.header, s, w.current.txs, uncles, w.current.receipts)
 	if err != nil {
+		log.Info("Error finalizing block", "err", err)
 		return err
 	}
 	if w.isRunning() {
@@ -1074,9 +1104,13 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		select {
 		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
 			w.unconfirmed.Shift(block.NumberU64() - 1)
+			log.Info("Task channel", "numTxs", len(block.Transactions()), "numReceipts", len(receipts))
 
 			feesWei := new(big.Int)
 			for i, tx := range block.Transactions() {
+				log.Info("---------------test")
+
+				log.Info("Counting fees", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
 				feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), tx.GasPrice()))
 			}
 			feesEth := new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Ether)))

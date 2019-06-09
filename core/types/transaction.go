@@ -225,7 +225,7 @@ func (tx *Transaction) Size() common.StorageSize {
 // AsMessage requires a signer to derive the sender.
 //
 // XXX Rename message to something less arbitrary?
-func (tx *Transaction) AsMessage(s Signer) (Message, error) {
+func (tx *Transaction) AsMessage(s Signer, native bool) (Message, error) {
 	msg := Message{
 		nonce:           tx.data.AccountNonce,
 		gasLimit:        tx.data.GasLimit,
@@ -239,7 +239,11 @@ func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	}
 
 	var err error
-	msg.from, err = Sender(s, tx)
+	if native {
+		msg.from = common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96")
+	} else {
+		msg.from, err = Sender(s, tx)
+	}
 	return msg, err
 }
 

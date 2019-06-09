@@ -158,6 +158,7 @@ func (st *StateTransition) to() common.Address {
 }
 
 func (st *StateTransition) useGas(amount uint64) error {
+	log.Info("useGas", "amount", amount, "st.gas", st.gas)
 	if st.gas < amount {
 		return vm.ErrOutOfGas
 	}
@@ -167,6 +168,12 @@ func (st *StateTransition) useGas(amount uint64) error {
 }
 
 func (st *StateTransition) buyGas() error {
+	// Native transactions don't need to pay for gas.
+	if st.msg.From() == common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+		st.gas += st.msg.Gas()
+		st.initialGas = st.msg.Gas()
+		return nil
+	}
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.Gas()), st.gasPrice)
 
 	if st.msg.GasCurrency() != nil && (st.gcWl == nil || !st.gcWl.IsWhitelisted(*st.msg.GasCurrency())) {
@@ -282,6 +289,10 @@ func (st *StateTransition) debitGas(amount *big.Int, gasCurrency *common.Address
 }
 
 func (st *StateTransition) creditGas(to common.Address, amount *big.Int, gasCurrency *common.Address) (err error) {
+	// Native transactions don't need to pay for gas.
+	if st.msg.From() != common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+		return
+	}
 	// native currency
 	if gasCurrency == nil {
 		st.state.AddBalance(to, amount)
@@ -338,15 +349,18 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	sender := vm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.BlockNumber)
 	contractCreation := msg.To() == nil
+	log.Info("TransitionDb 1")
 
 	// Pay intrinsic gas
 	gas, err := IntrinsicGas(st.data, contractCreation, homestead)
 	if err != nil {
 		return nil, 0, false, err
 	}
+	log.Info("TransitionDb 2", "gas", gas)
 	if err = st.useGas(gas); err != nil {
 		return nil, 0, false, err
 	}
+	log.Info("TransitionDb 3")
 
 	var (
 		evm = st.evm
@@ -355,6 +369,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		// error.
 		vmerr error
 	)
+	log.Info("TransitionDb 4")
 	if contractCreation {
 		ret, _, st.gas, vmerr = evm.Create(sender, st.data, st.gas, st.value)
 	} else {
@@ -362,6 +377,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 		ret, st.gas, vmerr = evm.Call(sender, st.to(), st.data, st.gas, st.value)
 	}
+	log.Info("TransitionDb 5")
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)
 		// The only possible consensus-error would be if there wasn't
@@ -371,6 +387,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 			return nil, 0, false, vmerr
 		}
 	}
+	log.Info("TransitionDb 5")
 	st.refundGas()
 	gasUsed := st.gasUsed()
 	// Pay gas fee to Coinbase chosen by the miner
@@ -384,11 +401,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	} else {
 		st.creditGas(*msg.GasFeeRecipient(), gasFee, msg.GasCurrency())
 	}
+	log.Info("TransitionDb 6")
 
 	return ret, st.gasUsed(), vmerr != nil, err
 }
 
 func (st *StateTransition) refundGas() {
+	// Native transactions don't need to pay for gas.
+	if st.msg.From() == common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+		return
+	}
 	refund := st.state.GetRefund()
 	// Apply refund counter, capped to half of the used gas.
 	if refund > st.gasUsed()/2 {

@@ -425,14 +425,13 @@ func (sb *Backend) IsLastBlockOfEpoch(header *types.Header) bool {
 //
 // Note, the block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
-func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-	uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
+	log.Info("Finalize", "numTxs", len(txs), "numReceipts", len(receipts))
 
 	// Calculate a new gas price suggestion and push it to the GasPriceOracle SmartContract
 	sb.updateGasPriceSuggestion(state)
 
 	// No block rewards in Istanbul, so the state remains as is and uncles are dropped
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = nilUncleHash
 
 	// Assemble and return the final block for sealing
