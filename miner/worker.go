@@ -1010,6 +1010,11 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 		wl.RefreshWhitelist()
 	}
 
+	if err := w.commitPreProcessingNativeTransactions(); err != nil {
+		log.Error("Failed to commit native preprocessing transactions")
+		return
+	}
+
 	// Fill the block with all available pending transactions.
 	pending, err := w.eth.TxPool().Pending()
 
@@ -1046,37 +1051,70 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	w.commit(uncles, w.fullTaskHook, true, tstart)
 }
 
+func (w *worker) commitPostProcessingNativeTransactions() error {
+	if _, ok := w.engine.(consensus.Istanbul); ok {
+		from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+		nonce := w.current.state.GetNonce(from)
+		// to := sb.regAdd.
+		to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
+		amount := big.NewInt(10)
+		gasLimit := uint64(100000000)
+		gasPrice := big.NewInt(0)
+		snap := w.current.state.Snapshot()
+		// functionSelector := hexutil.MustDecode("0x9951b90c")
+		// address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
+		// value := big.NewInt(10)
+		// data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
+		var data []byte
+		tx := types.NewNativeTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+		log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
+
+		_, err := w.commitTransaction(tx, w.coinbase)
+		w.current.tcount++
+		if err != nil {
+			log.Info("Failed to apply transaction", "err", err)
+			w.current.state.RevertToSnapshot(snap)
+			return err
+		}
+	}
+	return nil
+}
+func (w *worker) commitPreProcessingNativeTransactions() error {
+	if _, ok := w.engine.(consensus.Istanbul); ok {
+		from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+		nonce := w.current.state.GetNonce(from)
+		// to := sb.regAdd.
+		to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
+		amount := big.NewInt(5)
+		gasLimit := uint64(100000000)
+		gasPrice := big.NewInt(0)
+		snap := w.current.state.Snapshot()
+		// functionSelector := hexutil.MustDecode("0x9951b90c")
+		// address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
+		// value := big.NewInt(10)
+		// data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
+		var data []byte
+		tx := types.NewNativeTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+		log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
+
+		_, err := w.commitTransaction(tx, w.coinbase)
+		w.current.tcount++
+		if err != nil {
+			log.Info("Failed to apply transaction", "err", err)
+			w.current.state.RevertToSnapshot(snap)
+			return err
+		}
+	}
+	return nil
+}
+
 // commit runs any post-transaction state modifications, assembles the final block
 // and commits new work if consensus engine is running.
 func (w *worker) commit(uncles []*types.Header, interval func(), update bool, start time.Time) error {
-	if _, ok := w.engine.(consensus.Istanbul); ok {
-		if true {
-			from := common.HexToAddress("0x0000000000000000000000000000000000000000")
-			nonce := w.current.state.GetNonce(from)
-			// to := sb.regAdd.
-			to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
-			amount := big.NewInt(10)
-			gasLimit := uint64(100000000)
-			gasPrice := big.NewInt(0)
-			snap := w.current.state.Snapshot()
-			// functionSelector := hexutil.MustDecode("0x9951b90c")
-			// address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
-			// value := big.NewInt(10)
-			// data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
-			var data []byte
-			tx := types.NewNativeTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
-			log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
-
-			_, err := w.commitTransaction(tx, w.coinbase)
-			w.current.tcount++
-			if err != nil {
-				log.Info("Failed to apply transaction", "err", err)
-				w.current.state.RevertToSnapshot(snap)
-				return err
-			}
-		}
+	if err := w.commitPostProcessingNativeTransactions(); err != nil {
+		log.Error("Failed to commit native transactions")
+		return err
 	}
-
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := make([]*types.Receipt, len(w.current.receipts))
 	for i, l := range w.current.receipts {

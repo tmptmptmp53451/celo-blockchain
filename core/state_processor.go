@@ -92,6 +92,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		p.gcWl.RefreshWhitelist()
 	}
 
+	// Can validate well formed native transactions in here, or in consensus/istanbul/backend/backend.go Verify()
+
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg, p.gcWl, p.regAdd)
@@ -135,7 +137,11 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 	} else {
 		root = statedb.IntermediateRoot(config.IsEIP158(header.Number)).Bytes()
 	}
-	*usedGas += gas
+
+	// Native transactions do not contribute to cumulative gas.
+	if !msg.Native() {
+		*usedGas += gas
+	}
 
 	// Create a new receipt for the transaction, storing the intermediate root and gas used by the tx
 	// based on the eip phase, we're passing whether the root touch-delete accounts.

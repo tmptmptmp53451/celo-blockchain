@@ -255,6 +255,8 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 	// Make a copy of the state
 	state = state.Copy()
 
+	// Can validate well formed native transactions in here, or in core/state_processor.go Process()
+
 	// Apply this block's transactions to update the state
 	receipts, _, usedGas, err := sb.processBlock(block, state)
 	if err != nil {
