@@ -92,31 +92,6 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		p.gcWl.RefreshWhitelist()
 	}
 
-	/*
-		// TODO(asa): Create transaction here.
-		// from := common.HexToAddress("0x0000000000000000000000000000000000000000")
-		nonce := statedb.GetNonce(common.HexToAddress("0x0000000000000000000000000000000000000000"))
-		// to := sb.regAdd.
-		to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
-		amount := big.NewInt(0)
-		gasLimit := uint64(100000)
-		gasPrice := big.NewInt(0)
-		functionSelector := hexutil.MustDecode("0x9951b90c")
-		address := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd377")
-		value := big.NewInt(10)
-		data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
-		tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
-		log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
-		// gp := new(core.GasPool).AddGas(gasLimit * 2)
-		// receipt, _, err := core.ApplyTransaction(sb.chain.Config(), chain, &from, gp, state, header, tx, 0, vm.Config{}, nil, nil)
-		txs := block.Transactions()
-		txs = append(txs, tx)
-
-		header.Root = statedb.IntermediateRoot(p.config.IsEIP158(header.Number))
-		header.TxHash = types.DeriveSha(types.Transactions(txs))
-		// Iterate over and process the individual transactions
-	*/
-
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
 		receipt, _, err := ApplyTransaction(p.config, p.bc, nil, gp, statedb, header, tx, usedGas, cfg, p.gcWl, p.regAdd, false)
