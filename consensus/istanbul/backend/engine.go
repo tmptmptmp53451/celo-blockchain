@@ -433,6 +433,7 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 
 	// No block rewards in Istanbul, so the state remains as is and uncles are dropped
 	header.UncleHash = nilUncleHash
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 
 	// Assemble and return the final block for sealing
 	return types.NewBlock(header, txs, nil, receipts), nil

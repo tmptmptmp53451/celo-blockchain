@@ -169,7 +169,7 @@ func (st *StateTransition) useGas(amount uint64) error {
 
 func (st *StateTransition) buyGas() error {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() == common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+	if st.msg.From() == common.HexToAddress("0x0000000000000000000000000000000000000000") {
 		st.gas += st.msg.Gas()
 		st.initialGas = st.msg.Gas()
 		return nil
@@ -290,7 +290,7 @@ func (st *StateTransition) debitGas(amount *big.Int, gasCurrency *common.Address
 
 func (st *StateTransition) creditGas(to common.Address, amount *big.Int, gasCurrency *common.Address) (err error) {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() != common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+	if st.msg.From() != common.HexToAddress("0x0000000000000000000000000000000000000000") {
 		return
 	}
 	// native currency
@@ -373,9 +373,11 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	if contractCreation {
 		ret, _, st.gas, vmerr = evm.Create(sender, st.data, st.gas, st.value)
 	} else {
+		log.Info("Setting nonce", "nonce", st.state.GetNonce(sender.Address())+1)
 		// Increment the nonce for the next transaction
 		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 		ret, st.gas, vmerr = evm.Call(sender, st.to(), st.data, st.gas, st.value)
+		log.Info("Getting nonce", "nonce", st.state.GetNonce(sender.Address()))
 	}
 	log.Info("TransitionDb 5")
 	if vmerr != nil {
@@ -408,7 +410,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 func (st *StateTransition) refundGas() {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() == common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96") {
+	if st.msg.From() == common.HexToAddress("0x0000000000000000000000000000000000000000") {
 		return
 	}
 	refund := st.state.GetRefund()

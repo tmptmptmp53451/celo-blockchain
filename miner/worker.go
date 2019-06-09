@@ -759,10 +759,10 @@ func (w *worker) updateSnapshot() {
 	w.snapshotState = w.current.state.Copy()
 }
 
-func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address) ([]*types.Log, error) {
+func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address, native bool) ([]*types.Log, error) {
 	snap := w.current.state.Snapshot()
 
-	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), false)
+	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), native)
 	if err != nil {
 		w.current.state.RevertToSnapshot(snap)
 		return nil, err
@@ -832,7 +832,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 		// Start executing the transaction
 		w.current.state.Prepare(tx.Hash(), common.Hash{}, w.current.tcount)
 
-		logs, err := w.commitTransaction(tx, coinbase)
+		logs, err := w.commitTransaction(tx, coinbase, false)
 		switch err {
 		case core.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
@@ -1049,22 +1049,10 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 // commit runs any post-transaction state modifications, assembles the final block
 // and commits new work if consensus engine is running.
 func (w *worker) commit(uncles []*types.Header, interval func(), update bool, start time.Time) error {
-	// Deep copy receipts here to avoid interaction between different tasks.
-	receipts := make([]*types.Receipt, len(w.current.receipts))
-	for i, l := range w.current.receipts {
-		receipts[i] = new(types.Receipt)
-		*receipts[i] = *l
-	}
-	s := w.current.state.Copy()
-
-	// Set the validator set diff in the new header if we're using Istanbul and it's the last block of the epoch
-	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
-		if err := istanbul.UpdateValSetDiff(w.chain, w.current.header, s); err != nil {
-			return err
-		}
-		if false {
-			// from := common.HexToAddress("0x0000000000000000000000000000000000000000")
-			nonce := w.current.state.GetNonce(common.HexToAddress("0x47e172f6cfb6c7d01c1574fa3e2be7cc73269d96"))
+	if _, ok := w.engine.(consensus.Istanbul); ok {
+		if true {
+			from := common.HexToAddress("0x0000000000000000000000000000000000000000")
+			nonce := w.current.state.GetNonce(from)
 			// to := sb.regAdd.
 			to := common.HexToAddress("0xa9b0f2ad1c3b0d079df707d97897d68282bdd36b")
 			amount := big.NewInt(10)
@@ -1079,16 +1067,28 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 			tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
 			log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
 
-			coinbase := w.coinbase
-			receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), true)
+			_, err := w.commitTransaction(tx, w.coinbase, true)
+			w.current.tcount++
 			if err != nil {
 				log.Info("Failed to apply transaction", "err", err)
 				w.current.state.RevertToSnapshot(snap)
 				return err
 			}
-			w.current.txs = append(w.current.txs, tx)
-			w.current.receipts = append(w.current.receipts, receipt)
-			receipts = append(receipts, receipt)
+		}
+	}
+
+	// Deep copy receipts here to avoid interaction between different tasks.
+	receipts := make([]*types.Receipt, len(w.current.receipts))
+	for i, l := range w.current.receipts {
+		receipts[i] = new(types.Receipt)
+		*receipts[i] = *l
+	}
+	s := w.current.state.Copy()
+
+	// Set the validator set diff in the new header if we're using Istanbul and it's the last block of the epoch
+	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
+		if err := istanbul.UpdateValSetDiff(w.chain, w.current.header, s); err != nil {
+			return err
 		}
 	}
 
