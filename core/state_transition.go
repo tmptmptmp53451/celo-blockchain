@@ -86,6 +86,7 @@ type Message interface {
 
 	Nonce() uint64
 	CheckNonce() bool
+	Native() bool
 	Data() []byte
 }
 
@@ -169,7 +170,7 @@ func (st *StateTransition) useGas(amount uint64) error {
 
 func (st *StateTransition) buyGas() error {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() == common.HexToAddress("0x0000000000000000000000000000000000000000") {
+	if st.msg.Native() {
 		st.gas += st.msg.Gas()
 		st.initialGas = st.msg.Gas()
 		return nil
@@ -290,7 +291,7 @@ func (st *StateTransition) debitGas(amount *big.Int, gasCurrency *common.Address
 
 func (st *StateTransition) creditGas(to common.Address, amount *big.Int, gasCurrency *common.Address) (err error) {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() != common.HexToAddress("0x0000000000000000000000000000000000000000") {
+	if st.msg.Native() {
 		return
 	}
 	// native currency
@@ -410,7 +411,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 func (st *StateTransition) refundGas() {
 	// Native transactions don't need to pay for gas.
-	if st.msg.From() == common.HexToAddress("0x0000000000000000000000000000000000000000") {
+	if st.msg.Native() {
 		return
 	}
 	refund := st.state.GetRefund()

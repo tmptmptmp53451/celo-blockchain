@@ -52,6 +52,7 @@ type txdata struct {
 	Recipient       *common.Address `json:"to"       rlp:"nil"`        // nil means contract creation
 	Amount          *big.Int        `json:"value"    gencodec:"required"`
 	Payload         []byte          `json:"input"    gencodec:"required"`
+	Native          bool            `json:"native"   gencodec:"required"`
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -70,20 +71,25 @@ type txdataMarshaling struct {
 	GasFeeRecipient *hexutil.Big
 	Amount          *hexutil.Big
 	Payload         hexutil.Bytes
+	Native          bool
 	V               *hexutil.Big
 	R               *hexutil.Big
 	S               *hexutil.Big
 }
 
 func NewTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte) *Transaction {
-	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, gasCurrency, gasFeeRecipient, data)
+	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, gasCurrency, gasFeeRecipient, data, false)
+}
+
+func NewNativeTransaction(nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte) *Transaction {
+	return newTransaction(nonce, &to, amount, gasLimit, gasPrice, gasCurrency, gasFeeRecipient, data, true)
 }
 
 func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte) *Transaction {
-	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, gasCurrency, gasFeeRecipient, data)
+	return newTransaction(nonce, nil, amount, gasLimit, gasPrice, gasCurrency, gasFeeRecipient, data, false)
 }
 
-func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte) *Transaction {
+func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte, native bool) *Transaction {
 	if len(data) > 0 {
 		data = common.CopyBytes(data)
 	}
@@ -96,6 +102,7 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 		GasCurrency:     gasCurrency,
 		GasFeeRecipient: gasFeeRecipient,
 		Price:           new(big.Int),
+		Native:          native,
 		V:               new(big.Int),
 		R:               new(big.Int),
 		S:               new(big.Int),
@@ -225,7 +232,7 @@ func (tx *Transaction) Size() common.StorageSize {
 // AsMessage requires a signer to derive the sender.
 //
 // XXX Rename message to something less arbitrary?
-func (tx *Transaction) AsMessage(s Signer, native bool) (Message, error) {
+func (tx *Transaction) AsMessage(s Signer) (Message, error) {
 	msg := Message{
 		nonce:           tx.data.AccountNonce,
 		gasLimit:        tx.data.GasLimit,
@@ -236,10 +243,11 @@ func (tx *Transaction) AsMessage(s Signer, native bool) (Message, error) {
 		amount:          tx.data.Amount,
 		data:            tx.data.Payload,
 		checkNonce:      true,
+		native:          tx.data.Native,
 	}
 
 	var err error
-	if native {
+	if msg.native {
 		msg.from = common.HexToAddress("0x0000000000000000000000000000000000000000")
 	} else {
 		msg.from, err = Sender(s, tx)
@@ -424,6 +432,7 @@ type Message struct {
 	gasFeeRecipient *common.Address
 	data            []byte
 	checkNonce      bool
+	native          bool
 }
 
 func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice *big.Int, gasCurrency, gasFeeRecipient *common.Address, data []byte, checkNonce bool) Message {
@@ -438,6 +447,7 @@ func NewMessage(from common.Address, to *common.Address, nonce uint64, amount *b
 		gasFeeRecipient: gasFeeRecipient,
 		data:            data,
 		checkNonce:      checkNonce,
+		native:          false,
 	}
 }
 
@@ -451,3 +461,4 @@ func (m Message) Gas() uint64                      { return m.gasLimit }
 func (m Message) Nonce() uint64                    { return m.nonce }
 func (m Message) Data() []byte                     { return m.data }
 func (m Message) CheckNonce() bool                 { return m.checkNonce }
+func (m Message) Native() bool                     { return m.native }

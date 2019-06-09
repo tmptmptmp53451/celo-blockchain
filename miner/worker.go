@@ -759,10 +759,10 @@ func (w *worker) updateSnapshot() {
 	w.snapshotState = w.current.state.Copy()
 }
 
-func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address, native bool) ([]*types.Log, error) {
+func (w *worker) commitTransaction(tx *types.Transaction, coinbase common.Address) ([]*types.Log, error) {
 	snap := w.current.state.Snapshot()
 
-	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses(), native)
+	receipt, _, err := core.ApplyTransaction(w.config, w.chain, &coinbase, w.current.gasPool, w.current.state, w.current.header, tx, &w.current.header.GasUsed, *w.chain.GetVMConfig(), w.eth.GasCurrencyWhitelist(), w.eth.RegisteredAddresses())
 	if err != nil {
 		w.current.state.RevertToSnapshot(snap)
 		return nil, err
@@ -832,7 +832,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 		// Start executing the transaction
 		w.current.state.Prepare(tx.Hash(), common.Hash{}, w.current.tcount)
 
-		logs, err := w.commitTransaction(tx, coinbase, false)
+		logs, err := w.commitTransaction(tx, coinbase)
 		switch err {
 		case core.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
@@ -1064,10 +1064,10 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 			// value := big.NewInt(10)
 			// data := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(value)})
 			var data []byte
-			tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
+			tx := types.NewNativeTransaction(nonce, to, amount, gasLimit, gasPrice, nil, nil, data)
 			log.Info("Created transaction", "to", tx.To(), "value", tx.Value(), "nonce", tx.Nonce(), "gasLimit", tx.Gas(), "gasPrice", tx.GasPrice(), "gasCurrency", tx.GasCurrency(), "gasFeeRecipient", tx.GasFeeRecipient(), "data", tx.Data())
 
-			_, err := w.commitTransaction(tx, w.coinbase, true)
+			_, err := w.commitTransaction(tx, w.coinbase)
 			w.current.tcount++
 			if err != nil {
 				log.Info("Failed to apply transaction", "err", err)
