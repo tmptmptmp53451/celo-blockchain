@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -1077,8 +1078,8 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			log.Error("Failed to generate randomness")
 		}
 		w.current.randomness = randomness
-		w.current.newSealedRandomness = newRandomness
-		w.random.StoreCommitment(newRandomness, newRandomness, w.db)
+		copy(w.current.newSealedRandomness[:], crypto.Keccak256(newRandomness[:]))
+		w.random.StoreCommitment(newRandomness, w.current.newSealedRandomness, w.db)
 		callData := make([]byte, 64)
 		copy(callData[0:], randomness[:])
 		copy(callData[32:], newRandomness[:])
