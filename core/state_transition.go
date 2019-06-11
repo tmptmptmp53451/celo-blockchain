@@ -116,9 +116,14 @@ func IntrinsicGas(data []byte, contractCreation, homestead bool, gasCurrency *co
 		gas += z * params.TxDataZeroGas
 	}
 
-	// We need to read an ERC20 balance and make one creditGas() and two debitGas() calls.
+	// When paying in a non-Gold currency, we need to make one `balanceOf()` static call, one
+	// `debitFrom()` call, and two `creditTo()` calls.
+	// We always assume the `creditTo()` calls will use the max available gas, to avoid the
+	// chicken-and-egg problem of not knowing how much gas to refund until the refund takes place.
+	// Thus, any token that implements `creditTo()` must be sure never to use more than
+	// params.AssumedGasForGasFeeCreditToo.
 	if gasCurrency != nil {
-		gas += 3*params.MaxGasForDebitAndCreditTransactions + params.MaxGasToReadErc20Balance
+		gas += 2 * params.AssumedGasForGasFeeCreditTo
 	}
 
 	return gas, nil
@@ -166,27 +171,27 @@ func (st *StateTransition) useGas(amount uint64) error {
 	return nil
 }
 
-func (st *StateTransition) buyGas() error {
+func (st *StateTransition) buyGas() (uint64, error) {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.Gas()), st.gasPrice)
 
 	if st.msg.GasCurrency() != nil && (st.gcWl == nil || !st.gcWl.IsWhitelisted(*st.msg.GasCurrency())) {
 		log.Trace("Gas currency not whitelisted", "gas currency address", st.msg.GasCurrency())
-		return errNonWhitelistedGasCurrency
+		return 0, errNonWhitelistedGasCurrency
 	}
 
 	if !st.canBuyGas(st.msg.From(), mgval, st.msg.GasCurrency()) {
-		return errInsufficientBalanceForGas
+		return 0, errInsufficientBalanceForGas
 	}
 	if err := st.gp.SubGas(st.msg.Gas()); err != nil {
-		return err
+		return 0, err
 	}
 
 	st.initialGas = st.msg.Gas()
 	st.gas += st.msg.Gas()
-	err := st.debitGas(st.msg.From(), mgval, st.msg.GasCurrency())
-	return err
+	return st.debitGas(st.msg.From(), mgval, st.msg.GasCurrency())
 }
 
+// TODO(asa): What to do with balanceOf?
 func (st *StateTransition) canBuyGas(accountOwner common.Address, gasNeeded *big.Int, gasCurrency *common.Address) bool {
 	if gasCurrency == nil {
 		return st.state.GetBalance(accountOwner).Cmp(gasNeeded) > 0
@@ -198,33 +203,53 @@ func (st *StateTransition) canBuyGas(accountOwner common.Address, gasNeeded *big
 	return balanceOf.Cmp(gasNeeded) > 0
 }
 
-func (st *StateTransition) debitOrCreditErc20Balance(functionSelector []byte, address common.Address, amount *big.Int, gasCurrency *common.Address) error {
+func (st *StateTransition) debitFromOrCreditToHelper(functionSelector []byte, address common.Address, amount *big.Int, gasCurrency *common.Address, gas uint64) (uint64, error) {
 	if amount.Cmp(big.NewInt(0)) == 0 {
-		return nil
+		return 0, nil
 	}
 	evm := st.evm
 	transactionData := common.GetEncodedAbi(functionSelector, [][]byte{common.AddressToAbi(address), common.AmountToAbi(amount)})
 
 	rootCaller := vm.AccountRef(common.HexToAddress("0x0"))
-	// The caller was already charged for the cost of this operation via IntrinsicGas.
-	ret, leftoverGas, err := evm.Call(rootCaller, *gasCurrency, transactionData, params.MaxGasForDebitAndCreditTransactions, big.NewInt(0))
+	ret, gasRemaining, err := evm.Call(rootCaller, *gasCurrency, transactionData, gas, big.NewInt(0))
+	gasUsed := gas - gasRemaining
 	if err != nil {
-		log.Error("failed to debit or credit ERC20 balance", "ret", hexutil.Encode(ret), "leftoverGas", leftoverGas, "err", err)
-		return err
+		log.Error("failed to call debitFrom() or creditTo()", "ret", hexutil.Encode(ret), "gasRemaining", gasRemaining, "err", err)
 	}
-
-	return nil
+	return gasUsed, err
 }
 
-func (st *StateTransition) debitGas(from common.Address, amount *big.Int, gasCurrency *common.Address) (err error) {
+func (st *StateTransition) debitFrom(address common.Address, amount *big.Int, gasCurrency *common.Address) (uint64, error) {
+	// Function is "debitFrom(address from, uint256 value)"
+	// selector is first 4 bytes of keccak256 of "debitFrom(address,uint256)"
+	// Source:
+	// pip3 install pyethereum
+	// python3 -c 'from ethereum.utils import sha3; print(sha3("debitFrom(address,uint256)")[0:4].hex())'
+	functionSelector := hexutil.MustDecode("0x362a5f80")
+	return st.debitFromOrCreditToHelper(functionSelector, address, amount, gasCurrency, params.MaxGasForGasFeeDebitFrom)
+}
+
+func (st *StateTransition) debitGas(from common.Address, amount *big.Int, gasCurrency *common.Address) (uint64, error) {
 	log.Debug("Debiting gas", "from", from, "amount", amount, "gasCurrency", gasCurrency)
-	// native currency
 	if gasCurrency == nil {
 		st.state.SubBalance(from, amount)
-		return nil
+		return 0, nil
+	} else {
+		return st.debitFrom(from, amount, gasCurrency)
 	}
+}
 
-	return st.debitOrCreditErc20Balance(getDebitFromFunctionSelector(), from, amount, gasCurrency)
+// creditTo does not return `gasUsed` as we include 2 * params.AssumedGasForGasFeeCreditTo in the
+// intrinsic gas cost when paying in a non-Gold gas currency.
+func (st *StateTransition) creditTo(address common.Address, amount *big.Int, gasCurrency *common.Address) error {
+	// Function is "creditTo(address from, uint256 value)"
+	// selector is first 4 bytes of keccak256 of "creditTo(address,uint256)"
+	// Source:
+	// pip3 install pyethereum
+	// python3 -c 'from ethereum.utils import sha3; print(sha3("creditTo(address,uint256)")[0:4].hex())'
+	functionSelector := hexutil.MustDecode("0x9951b90c")
+	_, err := st.debitFromOrCreditToHelper(functionSelector, address, amount, gasCurrency, params.AssumedGasForGasFeeCreditTo)
+	return err
 }
 
 func (st *StateTransition) creditGas(to common.Address, amount *big.Int, gasCurrency *common.Address) (err error) {
@@ -233,27 +258,9 @@ func (st *StateTransition) creditGas(to common.Address, amount *big.Int, gasCurr
 	if gasCurrency == nil {
 		st.state.AddBalance(to, amount)
 		return nil
+	} else {
+		return st.creditTo(to, amount, gasCurrency)
 	}
-
-	return st.debitOrCreditErc20Balance(getCreditToFunctionSelector(), to, amount, gasCurrency)
-}
-
-func getDebitFromFunctionSelector() []byte {
-	// Function is "debitFrom(address from, uint256 value)"
-	// selector is first 4 bytes of keccak256 of "debitFrom(address,uint256)"
-	// Source:
-	// pip3 install pyethereum
-	// python3 -c 'from ethereum.utils import sha3; print(sha3("debitFrom(address,uint256)")[0:4].hex())'
-	return hexutil.MustDecode("0x362a5f80")
-}
-
-func getCreditToFunctionSelector() []byte {
-	// Function is "creditTo(address from, uint256 value)"
-	// selector is first 4 bytes of keccak256 of "creditTo(address,uint256)"
-	// Source:
-	// pip3 install pyethereum
-	// python3 -c 'from ethereum.utils import sha3; print(sha3("creditTo(address,uint256)")[0:4].hex())'
-	return hexutil.MustDecode("0x9951b90c")
 }
 
 func (st *StateTransition) preCheck() error {
@@ -284,23 +291,24 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	contractCreation := msg.To() == nil
 
 	// Calculate intrinsic gas.
-	gas, err := IntrinsicGas(st.data, contractCreation, homestead, msg.GasCurrency())
+	intrinsicGasUse, err := IntrinsicGas(st.data, contractCreation, homestead, msg.GasCurrency())
 	if err != nil {
 		return nil, 0, false, err
 	}
 
 	// If the intrinsic gas is more than provided in the tx, return without failing.
-	if gas > st.msg.Gas() {
-		log.Error("Transaction failed provide intrinsic gas", "err", err, "gas", gas)
+	if intrinsicGasUse > st.msg.Gas() {
+		log.Error("Transaction failed provide intrinsic gas", "err", err, "intrinsicGasUse", intrinsicGasUse)
 		return nil, 0, false, vm.ErrOutOfGas
 	}
 
-	err = st.buyGas()
+	buyGasUse, err := st.buyGas()
 	if err != nil {
-		log.Error("Transaction failed to buy gas", "err", err, "gas", gas)
+		log.Error("Transaction failed to buy gas", "err", err, "buyGasUse", buyGasUse)
 		return nil, 0, false, err
 	}
 
+	gas := intrinsicGasUse + buyGasUse
 	if err = st.useGas(gas); err != nil {
 		log.Error("Transaction failed to use gas", "err", err, "gas", gas)
 		return nil, 0, false, err
