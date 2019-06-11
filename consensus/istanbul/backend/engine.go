@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -98,6 +99,22 @@ var (
 			      "stateMutability": "view",
 			      "type": "function"
 			     }]`
+
+	// This is taken from celo-monorepo/packages/protocol/build/<env>/contracts/BondedDeposits.json
+	setCumulativeRewardWeightABI = `[{
+      "constant": false,
+      "inputs": [
+        {
+          "name": "blockReward",
+          "type": "uint256"
+        }
+      ],
+      "name": "setCumulativeRewardWeight",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }]`
 )
 var (
 	defaultDifficulty = big.NewInt(1)
@@ -109,7 +126,8 @@ var (
 	inmemoryAddresses  = 20 // Number of recent addresses from ecrecover
 	recentAddresses, _ = lru.NewARC(inmemoryAddresses)
 
-	getValidatorsFuncABI, _ = abi.JSON(strings.NewReader(getValidatorsABI))
+	getValidatorsFuncABI, _             = abi.JSON(strings.NewReader(getValidatorsABI))
+	setCumulativeRewardWeightFuncABI, _ = abi.JSON(strings.NewReader(setCumulativeRewardWeightABI))
 )
 
 // Author retrieves the Ethereum address of the account that minted the given
@@ -423,6 +441,22 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 	// Calculate a new gas price suggestion and push it to the GasPriceOracle SmartContract
 	sb.updateGasPriceSuggestion(state)
 
+	infrastructureBlockReward := big.NewInt(params.Ether)
+	governanceAddress := sb.regAdd.GetRegisteredAddress(params.GovernanceRegistryId)
+	if governanceAddress != nil {
+		state.AddBalance(*governanceAddress, infrastructureBlockReward)
+	}
+
+	stakerBlockReward := big.NewInt(params.Ether)
+	bondedDepositsAddress := sb.regAdd.GetRegisteredAddress(params.BondedDepositsRegistryId)
+	if bondedDepositsAddress != nil {
+		state.AddBalance(*bondedDepositsAddress, stakerBlockReward)
+		_, err := sb.iEvmH.MakeCall(*bondedDepositsAddress, setCumulativeRewardWeightFuncABI, "setCumulativeRewardWeight", []interface{}{stakerBlockReward}, []interface{}{}, 100000, big.NewInt(0), header, state)
+		if err != nil && err != fmt.Errorf("abi: unmarshalling empty output") {
+			log.Error("Unable to send block rewards to bonded deposits", "err", err)
+		}
+	}
+
 	// No block rewards in Istanbul, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = nilUncleHash
@@ -463,7 +497,7 @@ func (sb *Backend) Seal(chain consensus.ChainReader, block *types.Block, results
 
 	if sb.badBlock() {
 		// Generate bad transactions
-		tx := types.NewTransaction(100, common.Address{}, big.NewInt(10), uint64(10), big.NewInt(10), &common.Address{}, nil)
+		tx := types.NewTransaction(100, common.Address{}, big.NewInt(10), uint64(10), big.NewInt(10), &common.Address{}, nil, nil)
 		block.WithBody([]*types.Transaction{tx}, nil)
 	}
 
