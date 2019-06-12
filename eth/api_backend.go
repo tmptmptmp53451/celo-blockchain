@@ -198,7 +198,8 @@ func (b *EthAPIBackend) ProtocolVersion() int {
 }
 
 func (b *EthAPIBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
-	return gasprice.GetGoldGasPrice(ctx, b.eth.iEvmH, b.eth.regAdd)
+	return big.NewInt(5), nil
+	// return gasprice.GetGoldGasPrice(ctx, b.eth.iEvmH, b.eth.regAdd)
 }
 
 func (b *EthAPIBackend) SuggestPriceInCurrency(ctx context.Context, currencyAddress *common.Address) (*big.Int, error) {

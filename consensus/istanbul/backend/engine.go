@@ -440,7 +440,9 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 	uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error) {
 
 	// Calculate a new gas price suggestion and push it to the GasPriceOracle SmartContract
-	sb.updateGasPrice(header, state)
+	if false {
+		sb.updateGasPrice(header, state)
+	}
 
 	infrastructureBlockReward := big.NewInt(params.Ether)
 	governanceAddress := sb.regAdd.GetRegisteredAddress(params.GovernanceRegistryId)
@@ -478,7 +480,7 @@ func (sb *Backend) updateGasPrice(header *types.Header, state *state.StateDB) er
 	adjustmentSpeed := gasPriceParams[2]
 
 	newGasPriceFloor, err := gasprice.CalculateGasPriceFloor(header, gasPriceFloor, targetDensity, adjustmentSpeed)
-  log.Info("Setting new gas price floor", "gas price floor", newGasPriceFloor)
+	log.Info("Setting new gas price floor", "gas price floor", newGasPriceFloor)
 
 	gasprice.SetGasPriceFloor(context.Background(), sb.iEvmH, sb.regAdd, newGasPriceFloor, header, state)
 	return err

@@ -172,7 +172,8 @@ func (b *LesApiBackend) ProtocolVersion() int {
 }
 
 func (b *LesApiBackend) SuggestPrice(ctx context.Context) (*big.Int, error) {
-	return gasprice.GetGoldGasPrice(ctx, b.eth.iEvmH, b.eth.regAdd)
+	return big.NewInt(4), nil
+	// return gasprice.GetGoldGasPrice(ctx, b.eth.iEvmH, b.eth.regAdd)
 }
 
 func (b *LesApiBackend) SuggestPriceInCurrency(ctx context.Context, currencyAddress *common.Address) (*big.Int, error) {
