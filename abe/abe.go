@@ -82,7 +82,7 @@ func SendAttestationMessages(receipts []*types.Receipt, block *types.Block, coin
 
 	for _, receipt := range receipts {
 		for _, request := range receipt.AttestationRequests {
-			log.Error("[Celo] looking at request", "Verifier", request.Verifier, "Account", request.Account)
+			log.Error("[Celo] looking at request", "Verifier", request.Verifier, "Account", request.Account, "encryptedPhone", request.EncryptedPhone)
 			if !bytes.Equal(coinbase.Bytes(), request.Verifier.Bytes()) {
 				continue
 			}
