@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/big"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -122,8 +123,10 @@ func DecodeAttestationRequest(input []byte) (AttestationRequest, error) {
 	v.CodeHash = common.BytesToHash(input[32:64])
 	v.Verifier = common.BytesToAddress(input[96:128])
 
+	var encryptedPhoneLen big.Int
+	encryptedPhoneLen.SetBytes(input[128:160])
 	// TODO(asa): Consider validating the length of EncryptedPhone
-	v.EncryptedPhone = input[128:]
+	v.EncryptedPhone = input[160:(160 + encryptedPhoneLen.Int64())]
 	return v, nil
 }
 
