@@ -125,12 +125,21 @@ func DecodeAttestationRequest(input []byte) (AttestationRequest, error) {
 	v.CodeHash = common.BytesToHash(input[32:64])
 	v.Verifier = common.BytesToAddress(input[96:128])
 
-	encryptedPhoneLen := big.NewInt(0)
-	encryptedPhoneLen.SetBytes(input[128:160])
-	v.Length = encryptedPhoneLen.Uint64()
+	encodedEncryptedPhoneStart := big.NewInt(0)
+	encodedEncryptedPhoneLen := big.NewInt(0)
+
+	encodedEncryptedPhoneStart.SetBytes(input[128:160])
+	encryptedPhoneStart := encodedEncryptedPhoneStart.Uint64()
+
+	encodedEncryptedPhoneLen.SetBytes(input[encryptedPhoneStart:(encryptedPhoneStart + 32)])
+	encryptedPhoneLen := encodedEncryptedPhoneLen.Uint64()
+
+	v.Length = encryptedPhoneLen
+
 	// TODO(asa): Consider validating the length of EncryptedPhone
-	v.EncryptedPhone = input[160:(160 + encryptedPhoneLen.Int64())]
+	v.EncryptedPhone = input[(encryptedPhoneStart + 32):(encryptedPhoneStart + 32 + encryptedPhoneLen)]
 	v.TotalBytes = input
+
 	return v, nil
 }
 
