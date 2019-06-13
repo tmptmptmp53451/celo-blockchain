@@ -50,7 +50,7 @@ type AttestationRequest struct {
 	Account        common.Address
 	Verifier       common.Address
 	EncryptedPhone hexutil.Bytes
-	Length         int64
+	Length         uint64
 	TotalBytes     hexutil.Bytes
 }
 
@@ -127,7 +127,7 @@ func DecodeAttestationRequest(input []byte) (AttestationRequest, error) {
 
 	encryptedPhoneLen := big.NewInt(0)
 	encryptedPhoneLen.SetBytes(input[128:160])
-	v.Length = encryptedPhoneLen.Int64()
+	v.Length = encryptedPhoneLen.Uint64()
 	// TODO(asa): Consider validating the length of EncryptedPhone
 	v.EncryptedPhone = input[160:(160 + encryptedPhoneLen.Int64())]
 	v.TotalBytes = input
