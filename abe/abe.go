@@ -82,6 +82,8 @@ func SendAttestationMessages(receipts []*types.Receipt, block *types.Block, coin
 
 	for _, receipt := range receipts {
 		for _, request := range receipt.AttestationRequests {
+			log.Error("[Celo] looking at request")
+
 			if !bytes.Equal(coinbase.Bytes(), request.Verifier.Bytes()) {
 				continue
 			}
@@ -97,7 +99,7 @@ func SendAttestationMessages(receipts []*types.Receipt, block *types.Block, coin
 				continue
 			}
 
-			log.Debug(fmt.Sprintf("[Celo] Sending attestation message: \"%s\"", message), nil, nil)
+			log.Error(fmt.Sprintf("[Celo] Sending attestation message: \"%s\"", message), nil, nil)
 			err = sendSms(phoneNumber, message, request.Account, account.Address, verificationServiceURL)
 			if err != nil {
 				log.Error("[Celo] Failed to send SMS", "err", err)
