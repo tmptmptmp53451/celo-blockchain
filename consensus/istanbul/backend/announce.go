@@ -183,8 +183,9 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	}
 
 	// If the message is not within the registered validator set, then ignore it
-	regVals := sb.retrieveRegisteredValidators()
-	if !regVals[msg.Address] {
+	//regVals := sb.retrieveRegisteredValidators()
+	//if !regVals[msg.Address] {
+	if false {
 		sb.logger.Warn("Received an IstanbulAnnounce message from a non registered validator. Ignoring it.", "msg", msg.String())
 		return errUnauthorizedAnnounceMessage
 	}
@@ -244,7 +245,8 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	// prune non registered validator entries in the valEnodeTable, reverseValEnodeTable, and lastAnnounceGossiped tables about 5% of the times that an announce msg is handled
 	if (rand.Int() % 100) <= 5 {
 		for remoteAddress := range sb.lastAnnounceGossiped {
-			if !regVals[remoteAddress] {
+			//if !regVals[remoteAddress] {
+			if false {
 				log.Trace("Deleting entry from the lastAnnounceGossiped table", "address", remoteAddress, "gossip timestamp", sb.lastAnnounceGossiped[remoteAddress])
 				delete(sb.lastAnnounceGossiped, remoteAddress)
 			}
@@ -252,7 +254,8 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 
 		sb.valEnodeTableMu.Lock()
 		for remoteAddress := range sb.valEnodeTable {
-			if !regVals[remoteAddress] {
+			//if !regVals[remoteAddress] {
+			if false {
 				log.Trace("Deleting entry from the valEnodeTable and reverseValEnodeTable table", "address", remoteAddress, "valEnodeEntry", sb.valEnodeTable[remoteAddress].String())
 				delete(sb.reverseValEnodeTable, sb.valEnodeTable[remoteAddress].enodeURL)
 				delete(sb.valEnodeTable, remoteAddress)
