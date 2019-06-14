@@ -79,14 +79,14 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 
 	// Refresh the registered addresses cache right before processing the block's transactions
-	if p.gcWl != nil {
-		p.regAdd.RefreshAddresses()
-	}
+	//if p.gcWl != nil {
+	//	p.regAdd.RefreshAddresses()
+	//}
 
 	// Refresh the gas currency whitelist cache right before processing the block's transactions
-	if p.gcWl != nil {
-		p.gcWl.RefreshWhitelist()
-	}
+	//if p.gcWl != nil {
+	//	p.gcWl.RefreshWhitelist()
+	//}
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
