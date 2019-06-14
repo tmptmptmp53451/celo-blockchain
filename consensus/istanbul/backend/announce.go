@@ -124,13 +124,16 @@ func (am *announceMessage) VerifySig() error {
 }
 
 func (sb *Backend) sendIstAnnounce() error {
-	logger := sb.logger.New()
+        logger := sb.logger.New("func", "sendIstAnnounce")
+        logger.Trace("Entered sendIstAnnounce")
 
 	enode := sb.Enode()
 	if enode == nil {
 		logger.Warn("Enode is nil in sendIstAnnounce")
 		return nil
 	}
+
+	logger.Trace("Got local enode", enode, enode.String())
 
 	enodeUrl := enode.String()
 	view := sb.core.CurrentView()
@@ -139,11 +142,15 @@ func (sb *Backend) sendIstAnnounce() error {
 		EnodeURL: enodeUrl,
 		View:     view}
 
+	logger.Trace("Constructed Announce Message", "msg", msg.String())
+
 	// Sign the announce message
 	if err := msg.Sign(sb.Sign); err != nil {
 		logger.Error("Error in signing an Istanbul Announce Message", "msg", msg.String(), "err", err)
 		return err
 	}
+
+	logger.Trace("Signed Announce Message", "msg", msg.String())
 
 	// Convert to payload
 	payload, err := msg.Payload()
