@@ -84,7 +84,7 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg) (bool, error) {
 				Payload: data,
 			})
 		} else if msg.Code == istanbulAnnounceMsg {
-			go sb.handleIstAnnounce(data)
+			go sb.handleIstAnnounce(data, addr)
 		}
 
 		return true, nil

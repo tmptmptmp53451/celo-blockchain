@@ -124,7 +124,7 @@ func (am *announceMessage) VerifySig() error {
 }
 
 func (sb *Backend) sendIstAnnounce() error {
-        logger := sb.logger.New("func", "sendIstAnnounce")
+	logger := sb.logger.New("func", "sendIstAnnounce")
 
 	enode := sb.Enode()
 	if enode == nil {
@@ -159,9 +159,9 @@ func (sb *Backend) sendIstAnnounce() error {
 	return nil
 }
 
-func (sb *Backend) handleIstAnnounce(payload []byte) error {
-        logger := sb.logger.New("func", "handleIstAnnounce")
-	logger.Trace("Handling an IstanbulAnnounce message")
+func (sb *Backend) handleIstAnnounce(payload []byte, fromAddr common.Address) error {
+	logger := sb.logger.New("func", "handleIstAnnounce")
+	logger.Trace("Handling an IstanbulAnnounce message", "fromAddr", fromAddr)
 
 	msg := new(announceMessage)
 	// Decode message
@@ -225,7 +225,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 		// if this node is also part of the current epoch's valset
 		if _, remoteVal := valSet.GetByAddress(msg.Address); remoteVal != nil {
 			if _, localNode := valSet.GetByAddress(sb.Address()); localNode != nil {
-			        logger.Trace("Adding a validator peer", "enodeURL", msg.EnodeURL)
+				logger.Trace("Adding a validator peer", "enodeURL", msg.EnodeURL)
 				sb.AddValidatorPeer(msg.EnodeURL)
 			}
 		}
