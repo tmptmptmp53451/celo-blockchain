@@ -208,6 +208,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte, fromAddr common.Address) er
 					sb.RemoveValidatorPeer(valEnodeEntry.enodeURL)
 					valEnodeEntry.enodeURL = msg.EnodeURL
 					sb.reverseValEnodeTable[msg.EnodeURL] = msg.Address
+					logger.Trace("EnodeURL updated", "address" msg.Addressm, "oldEnodeURL", valEnodeEntry.enodeURL, "newEnodeURL",  msg.EnodeURL)
 				}
 				valEnodeEntry.view = msg.View
 				logger.Trace("Updated an entry in the valEnodeTable", "address", msg.Address, "ValidatorEnode", sb.valEnodeTable[msg.Address].String())
@@ -254,7 +255,6 @@ func (sb *Backend) handleIstAnnounce(payload []byte, fromAddr common.Address) er
 			}
 		}
 
-		sb.valEnodeTableMu.Lock()
 		for remoteAddress := range sb.valEnodeTable {
 			//if !regVals[remoteAddress] {
 			if false {
@@ -263,7 +263,6 @@ func (sb *Backend) handleIstAnnounce(payload []byte, fromAddr common.Address) er
 				delete(sb.valEnodeTable, remoteAddress)
 			}
 		}
-		sb.valEnodeTableMu.Unlock()
 	}
 
 	return nil
