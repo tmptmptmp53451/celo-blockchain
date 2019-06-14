@@ -125,7 +125,6 @@ func (am *announceMessage) VerifySig() error {
 
 func (sb *Backend) sendIstAnnounce() error {
         logger := sb.logger.New("func", "sendIstAnnounce")
-        logger.Trace("Entered sendIstAnnounce")
 
 	enode := sb.Enode()
 	if enode == nil {
@@ -161,25 +160,26 @@ func (sb *Backend) sendIstAnnounce() error {
 }
 
 func (sb *Backend) handleIstAnnounce(payload []byte) error {
-	sb.logger.Trace("Handling an IstanbulAnnounce message")
+        logger := sb.logger.New("func", "handleIstAnnounce")
+	logger.Trace("Handling an IstanbulAnnounce message")
 
 	msg := new(announceMessage)
 	// Decode message
 	err := msg.FromPayload(payload)
 	if err != nil {
-		sb.logger.Error("Error in decoding received Istanbul Announce message", "err", err, "payload", hex.EncodeToString(payload))
+		logger.Error("Error in decoding received Istanbul Announce message", "err", err, "payload", hex.EncodeToString(payload))
 		return err
 	}
 
 	// Verify message signature
 	if err := msg.VerifySig(); err != nil {
-		sb.logger.Error("Error in verifying the signature of an Istanbul Announce message", "err", err, "AnnounceMsg", msg.String())
+		logger.Error("Error in verifying the signature of an Istanbul Announce message", "err", err, "AnnounceMsg", msg.String())
 		return err
 	}
 
 	// If the message is originally from this node, then ignore it
 	if msg.Address == sb.Address() {
-		sb.logger.Trace("Received an IstanbulAnnounce message originating from this node. Ignoring it.")
+		logger.Trace("Received an IstanbulAnnounce message originating from this node. Ignoring it.")
 		return nil
 	}
 
@@ -187,7 +187,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	//regVals := sb.retrieveRegisteredValidators()
 	//if !regVals[msg.Address] {
 	if false {
-		sb.logger.Warn("Received an IstanbulAnnounce message from a non registered validator. Ignoring it.", "AnnounceMsg", msg.String())
+		logger.Warn("Received an IstanbulAnnounce message from a non registered validator. Ignoring it.", "AnnounceMsg", msg.String())
 		return errUnauthorizedAnnounceMessage
 	}
 
@@ -199,7 +199,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 		if valEnodeEntry, ok := sb.valEnodeTable[msg.Address]; ok {
 			// If it is old message, ignore it.
 			if msg.View.Cmp(valEnodeEntry.view) <= 0 {
-				sb.logger.Trace("Received an old announce message.  Ignoring it.", "from", msg.Address.Hex(), "view", msg.View, "enode", msg.EnodeURL)
+				logger.Trace("Received an old announce message.  Ignoring it.", "from", msg.Address.Hex(), "view", msg.View, "enode", msg.EnodeURL)
 				return errOldAnnounceMessage
 			} else {
 				// Check if the enode has been changed
@@ -210,12 +210,12 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 					sb.reverseValEnodeTable[msg.EnodeURL] = msg.Address
 				}
 				valEnodeEntry.view = msg.View
-				sb.logger.Trace("Updated an entry in the valEnodeTable", "address", msg.Address, "ValidatorEnode", sb.valEnodeTable[msg.Address].String())
+				logger.Trace("Updated an entry in the valEnodeTable", "address", msg.Address, "ValidatorEnode", sb.valEnodeTable[msg.Address].String())
 			}
 		} else {
 			sb.valEnodeTable[msg.Address] = &ValidatorEnode{view: msg.View, enodeURL: msg.EnodeURL}
 			sb.reverseValEnodeTable[msg.EnodeURL] = msg.Address
-			sb.logger.Trace("Created an entry in the valEnodeTable", "address", msg.Address, "ValidatorEnode", sb.valEnodeTable[msg.Address].String())
+			logger.Trace("Created an entry in the valEnodeTable", "address", msg.Address, "ValidatorEnode", sb.valEnodeTable[msg.Address].String())
 		}
 
 		block := sb.currentBlock()
@@ -225,6 +225,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 		// if this node is also part of the current epoch's valset
 		if _, remoteVal := valSet.GetByAddress(msg.Address); remoteVal != nil {
 			if _, localNode := valSet.GetByAddress(sb.Address()); localNode != nil {
+			        logger.Trace("Adding a validator peer", "enodeURL", msg.EnodeURL)
 				sb.AddValidatorPeer(msg.EnodeURL)
 			}
 		}
@@ -233,12 +234,12 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	// If we gossiped this address/enodeURL within the last 60 seconds, then don't regossip
 	if lastGossipTs, ok := sb.lastAnnounceGossiped[msg.Address]; ok {
 		if lastGossipTs.enodeURL == msg.EnodeURL && time.Since(lastGossipTs.timestamp) < time.Minute {
-			sb.logger.Trace("Already regossiped the msg within the last minute, so not regossiping.", "AnnounceMsg", msg)
+			logger.Trace("Already regossiped the msg within the last minute, so not regossiping.", "AnnounceMsg", msg)
 			return nil
 		}
 	}
 
-	sb.logger.Trace("Regossiping the istanbul announce message", "AnnounceMsg", msg)
+	logger.Trace("Regossiping the istanbul announce message", "AnnounceMsg", msg)
 	sb.Gossip(nil, payload, istanbulAnnounceMsg, true)
 
 	sb.lastAnnounceGossiped[msg.Address] = &AnnounceGossipTimestamp{enodeURL: msg.EnodeURL, timestamp: time.Now()}
