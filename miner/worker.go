@@ -528,14 +528,14 @@ func (w *worker) mainLoop() {
 				}
 
 				// Refresh the registered address cache before processing transaction batch
-				if regAdd := w.eth.RegisteredAddresses(); regAdd != nil {
-					regAdd.RefreshAddresses()
-				}
+				//if regAdd := w.eth.RegisteredAddresses(); regAdd != nil {
+				//	regAdd.RefreshAddresses()
+				//}
 
 				// Refresh the gas currency whitelist cache before processing transaction batch
-				if wl := w.eth.GasCurrencyWhitelist(); wl != nil {
-					wl.RefreshWhitelist()
-				}
+				//if wl := w.eth.GasCurrencyWhitelist(); wl != nil {
+				//	wl.RefreshWhitelist()
+				//}
 
 				txset := types.NewTransactionsByPriceAndNonce(w.current.signer, txs, w.txCmp)
 				w.commitTransactions(txset, coinbase, nil)
@@ -1003,14 +1003,14 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 	w.updateSnapshot()
 
 	// Refresh the registered address cache before processing transaction batch
-	if regAdd := w.eth.RegisteredAddresses(); regAdd != nil {
-		regAdd.RefreshAddresses()
-	}
+	//if regAdd := w.eth.RegisteredAddresses(); regAdd != nil {
+	//	regAdd.RefreshAddresses()
+	//}
 
 	// Refresh the gas currency whitelist cache before processing the pending transactions
-	if wl := w.eth.GasCurrencyWhitelist(); wl != nil {
-		wl.RefreshWhitelist()
-	}
+	//if wl := w.eth.GasCurrencyWhitelist(); wl != nil {
+	//	wl.RefreshWhitelist()
+	//}
 
 	// Fill the block with all available pending transactions.
 	pending, err := w.eth.TxPool().Pending()

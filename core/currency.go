@@ -249,7 +249,7 @@ func (co *CurrencyOperator) mainLoop() {
 	ticker := time.NewTicker(10 * time.Second)
 
 	for range ticker.C {
-		co.retrieveExchangeRates()
+		//	co.retrieveExchangeRates()
 	}
 }
 
