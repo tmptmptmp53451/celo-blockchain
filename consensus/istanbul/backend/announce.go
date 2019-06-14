@@ -133,8 +133,6 @@ func (sb *Backend) sendIstAnnounce() error {
 		return nil
 	}
 
-	logger.Trace("Got local enode", "enode", enode.String())
-
 	enodeUrl := enode.String()
 	view := sb.core.CurrentView()
 
@@ -142,24 +140,20 @@ func (sb *Backend) sendIstAnnounce() error {
 		EnodeURL: enodeUrl,
 		View:     view}
 
-	logger.Trace("Constructed Announce Message", "msg", msg.String())
-
 	// Sign the announce message
 	if err := msg.Sign(sb.Sign); err != nil {
-		logger.Error("Error in signing an Istanbul Announce Message", "msg", msg.String(), "err", err)
+		logger.Error("Error in signing an Istanbul Announce Message", "AnnounceMsg", msg.String(), "err", err)
 		return err
 	}
-
-	logger.Trace("Signed Announce Message", "msg", msg.String())
 
 	// Convert to payload
 	payload, err := msg.Payload()
 	if err != nil {
-		logger.Error("Error in converting Istanbul Announce Message to payload", "msg", msg.String(), "err", err)
+		logger.Error("Error in converting Istanbul Announce Message to payload", "AnnounceMsg", msg.String(), "err", err)
 		return err
 	}
 
-	logger.Trace("Broadcasting an announce message", "msg", msg)
+	logger.Trace("Broadcasting an announce message", "AnnounceMsg", msg)
 
 	sb.Gossip(nil, payload, istanbulAnnounceMsg, true)
 
@@ -179,7 +173,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 
 	// Verify message signature
 	if err := msg.VerifySig(); err != nil {
-		sb.logger.Error("Error in verifying the signature of an Istanbul Announce message", "err", err, "msg", msg.String())
+		sb.logger.Error("Error in verifying the signature of an Istanbul Announce message", "err", err, "AnnounceMsg", msg.String())
 		return err
 	}
 
@@ -193,7 +187,7 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	//regVals := sb.retrieveRegisteredValidators()
 	//if !regVals[msg.Address] {
 	if false {
-		sb.logger.Warn("Received an IstanbulAnnounce message from a non registered validator. Ignoring it.", "msg", msg.String())
+		sb.logger.Warn("Received an IstanbulAnnounce message from a non registered validator. Ignoring it.", "AnnounceMsg", msg.String())
 		return errUnauthorizedAnnounceMessage
 	}
 
@@ -239,12 +233,12 @@ func (sb *Backend) handleIstAnnounce(payload []byte) error {
 	// If we gossiped this address/enodeURL within the last 60 seconds, then don't regossip
 	if lastGossipTs, ok := sb.lastAnnounceGossiped[msg.Address]; ok {
 		if lastGossipTs.enodeURL == msg.EnodeURL && time.Since(lastGossipTs.timestamp) < time.Minute {
-			sb.logger.Trace("Already regossiped the msg within the last minute, so not regossiping.", "msg", msg)
+			sb.logger.Trace("Already regossiped the msg within the last minute, so not regossiping.", "AnnounceMsg", msg)
 			return nil
 		}
 	}
 
-	sb.logger.Trace("Regossiping the istanbul announce message", "msg", msg)
+	sb.logger.Trace("Regossiping the istanbul announce message", "AnnounceMsg", msg)
 	sb.Gossip(nil, payload, istanbulAnnounceMsg, true)
 
 	sb.lastAnnounceGossiped[msg.Address] = &AnnounceGossipTimestamp{enodeURL: msg.EnodeURL, timestamp: time.Now()}
