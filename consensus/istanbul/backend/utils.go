@@ -66,7 +66,7 @@ func (sb *Backend) sendAnnounceMsgs() {
 	sb.announceWg.Add(1)
 	defer sb.announceWg.Done()
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
 
 	for {
 		select {

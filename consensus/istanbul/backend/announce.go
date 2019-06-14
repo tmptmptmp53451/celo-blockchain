@@ -133,7 +133,7 @@ func (sb *Backend) sendIstAnnounce() error {
 		return nil
 	}
 
-	logger.Trace("Got local enode", enode, enode.String())
+	logger.Trace("Got local enode", "enode", enode.String())
 
 	enodeUrl := enode.String()
 	view := sb.core.CurrentView()
