@@ -130,7 +130,7 @@ func (r *Random) Running() bool {
 // database.
 func (r *Random) GetLastRandomness(coinbase common.Address, db *ethdb.Database, header *types.Header, state *state.StateDB) (common.Hash, error) {
 	if (r.randomnessCache != common.Hash{}) {
-		log.Trace("Read last randomness from cache", "randomness", r.randomnessCache.Hex())
+		log.Debug("Read last randomness from cache", "randomness", r.randomnessCache.Hex())
 		return r.randomnessCache, nil
 	}
 
