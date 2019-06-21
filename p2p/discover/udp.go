@@ -650,6 +650,7 @@ func (req *ping) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, fromKey e
 }
 
 func (req *ping) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
+	log.Error("handlePing", "reqFrom", req.From, "from", from, "fromID", fromID)
 	// Reply.
 	t.send(from, fromID, pongPacket, &pong{
 		To:         makeEndpoint(from, req.From.TCP),
