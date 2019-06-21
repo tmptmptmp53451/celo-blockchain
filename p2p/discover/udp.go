@@ -528,7 +528,7 @@ func (t *udp) send(toaddr *net.UDPAddr, toid enode.ID, ptype byte, req packet) (
 
 func (t *udp) write(toaddr *net.UDPAddr, toid enode.ID, what string, packet []byte) error {
 	_, err := t.conn.WriteToUDP(packet, toaddr)
-	log.Trace(">> "+what, "id", toid, "addr", toaddr, "err", err)
+	log.Error(">> "+what, "id", toid, "addr", toaddr, "err", err)
 	return err
 }
 
@@ -596,7 +596,7 @@ func (t *udp) handlePacket(from *net.UDPAddr, buf []byte) error {
 	if err == nil {
 		err = packet.preverify(t, from, fromID, fromKey)
 	}
-	log.Trace("<< "+packet.name(), "id", fromID, "addr", from, "err", err)
+	log.Error("<< "+packet.name(), "id", fromID, "addr", from, "err", err)
 	if err == nil {
 		packet.handle(t, from, fromID, hash)
 	}
@@ -660,7 +660,16 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) 
 
 	// Ping back if our last pong on file is too far in the past.
 	n := wrapNode(enode.NewV4(req.senderKey, req.From.IP, int(req.From.TCP), from.Port))
+	if time.Since(t.db.LastPongReceived(n.ID(), req.From.IP)) > bondExpiration {
+		fromAddr := net.UDPAddr{IP: req.From.IP, Port: int(req.From.UDP)}
+		t.sendPing(fromID, &fromAddr, func() {
+			log.Error("Add Node", "reqFrom", req.From, "from", fromAddr)
+			t.tab.addVerifiedNode(n)
+		})
+	} else {
+		log.Error("Add Node", "reqFrom", req.From, "from", from)
 		t.tab.addVerifiedNode(n)
+	}
 
 	// Update node database and endpoint predictor.
 	t.db.UpdateLastPingReceived(n.ID(), from.IP, time.Now())
