@@ -88,7 +88,20 @@ func (c *core) checkMessage(msgCode uint64, view *istanbul.View) error {
 }
 
 func (c *core) storeBacklog(msg *message, src istanbul.Validator) {
-	logger := c.logger.New("from", src, "state", c.state)
+	var msgType string
+	switch msg.Code {
+	case msgPreprepare:
+		msgType = "msgPreprepare"
+	case msgPrepare:
+		msgType = "msgPrepare"
+	case msgCommit:
+		msgType = "msgCommit"
+	case msgRoundChange:
+		msgType = "msgRoundChange"
+	default:
+		msgType = "msgUnknown"
+	}
+	logger := c.logger.New("address", c.address, "from", src, "state", c.state, "func", "storeBacklog", "msgType", msgType)
 
 	if src.Address() == c.Address() {
 		logger.Warn("Backlog from self")
