@@ -152,7 +152,20 @@ func (c *core) handleMsg(payload []byte) error {
 }
 
 func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
-	logger := c.logger.New("address", c.address, "from", src)
+	var msgType string
+	switch msg.Code {
+	case msgPreprepare:
+		msgType = "msgPreprepare"
+	case msgPrepare:
+		msgType = "msgPrepare"
+	case msgCommit:
+		msgType = "msgCommit"
+	case msgRoundChange:
+		msgType = "msgRoundChange"
+	default:
+		msgType = "msgUnknown"
+	}
+	logger := c.logger.New("address", c.address, "from", src, "func", "handleCheckedMsg", "msgType", msgType)
 
 	// Store the message if it's a future message
 	testBacklog := func(err error) error {
