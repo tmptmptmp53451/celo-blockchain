@@ -596,6 +596,7 @@ func (tab *Table) addSeenNode(n *node) {
 //
 // The caller must not hold tab.mutex.
 func (tab *Table) addVerifiedNode(n *node) {
+	log.Error("addVerifiedNode", "n", n)
 	if !tab.isInitDone() {
 		return
 	}
