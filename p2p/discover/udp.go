@@ -653,6 +653,12 @@ func (req *ping) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, fromKey e
 func (req *ping) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
 	log.Error("handlePing", "from", from, "req", req, "fromID", fromID)
 	// Reply.
+
+	senderFrom := req.From.IP
+	if senderFrom == nil {
+		senderFrom = from.IP
+	}
+
 	t.send(from, fromID, pongPacket, &pong{
 		To:         makeEndpoint(from, req.From.TCP),
 		ReplyTok:   mac,
@@ -660,7 +666,7 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) 
 	})
 
 	// Ping back if our last pong on file is too far in the past.
-	n := wrapNode(enode.NewV4(req.senderKey, from.IP, int(req.From.TCP), from.Port))
+	n := wrapNode(enode.NewV4(req.senderKey, senderFrom, int(req.From.TCP), from.Port))
 	if time.Since(t.db.LastPongReceived(n.ID(), from.IP)) > bondExpiration {
 		t.sendPing(fromID, from, func() {
 			t.tab.addVerifiedNode(n)
