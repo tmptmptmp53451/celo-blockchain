@@ -621,6 +621,7 @@ func (tab *Table) addVerifiedNode(n *node) {
 		return
 	}
 	// Add to front of bucket.
+	log.Error("Added node indeed")
 	b.entries, _ = pushNode(b.entries, n, bucketSize)
 	b.replacements = deleteNode(b.replacements, n)
 	n.addedAt = time.Now()

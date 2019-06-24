@@ -291,12 +291,14 @@ func (s *dialstate) taskDone(t task, now time.Time) {
 }
 
 func (t *dialTask) Do(srv *Server) {
+	log.Error("Dial Do task", "t", t)
 	if t.dest.Incomplete() {
 		if !t.resolve(srv) {
+			log.Error("Dial Do task incomplete", "t", t)
 			return
 		}
 	}
-	log.Error("Dial dial task")
+	log.Error("Dial dial task", "t", t)
 	err := t.dial(srv, t.dest)
 	if err != nil {
 		log.Error("Dial error", "task", t, "err", err)
