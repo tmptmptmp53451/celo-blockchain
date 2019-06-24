@@ -723,6 +723,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 		if netutil.CheckRelayIP(from.IP, n.IP()) == nil {
 			p.Nodes = append(p.Nodes, nodeToRPC(n))
 		}
+		log.Error("handleFindNode", "n", n)
 		if len(p.Nodes) == maxNeighbors {
 			t.send(from, fromID, neighborsPacket, &p)
 			p.Nodes = p.Nodes[:0]
