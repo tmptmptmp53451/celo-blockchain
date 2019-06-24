@@ -349,6 +349,7 @@ func (t *udp) findnode(toid enode.ID, toaddr *net.UDPAddr, target encPubkey) ([]
 	errc := t.pending(toid, toaddr.IP, neighborsPacket, func(r interface{}) (matched bool, requestDone bool) {
 		reply := r.(*neighbors)
 		for _, rn := range reply.Nodes {
+			log.Error("received Neighbor", "rn", rn, "toaddr", toaddr)
 			nreceived++
 			n, err := t.nodeFromRPC(toaddr, rn)
 			if err != nil {
