@@ -167,13 +167,14 @@ func (c *core) handleCheckedMsg(msg *message, src istanbul.Validator) error {
 		msgType = "msgUnknown"
 	}
 	logger := c.logger.New("address", c.address, "from", src, "func", "handleCheckedMsg", "msgType", msgType)
+	logger.info("Handling checked message", "msg", msg)
 
 	// Store the message if it's a future message
 	testBacklog := func(err error) error {
 		if err == errFutureMessage {
 			c.storeBacklog(msg, src)
 		} else if err == errTooFarInTheFutureMessage {
-			logger.Trace("Dropping message too far in the future", "msg", msg)
+			logger.Info("Dropping message too far in the future", "msg", msg)
 		}
 
 		return err
