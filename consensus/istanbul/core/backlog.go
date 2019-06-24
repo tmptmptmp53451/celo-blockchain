@@ -25,11 +25,11 @@ import (
 
 var (
 	// msgPriority is defined for calculating processing priority to speedup consensus
-	// msgPreprepare > msgCommit > msgPrepare
+	// msgPreprepare > msgPrepare > msgCommit
 	msgPriority = map[uint64]int{
 		msgPreprepare: 1,
-		msgCommit:     2,
-		msgPrepare:    3,
+		msgCommit:     3,
+		msgPrepare:    2,
 	}
 
 	acceptMaxFutureViews                = big.NewInt(10)
