@@ -565,7 +565,7 @@ func (evm *EVM) handleABICall(caller ContractRef, abi abi.ABI, funcName string, 
 	ret, leftoverGas, err := call(transactionData)
 
 	if err != nil {
-		log.Error("Error in calling the EVM", "err", err)
+		log.Trace("Error in calling the EVM", "err", err)
 		return leftoverGas, err
 	}
 

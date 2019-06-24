@@ -167,7 +167,7 @@ func (s *dialstate) newTasks(nRunning int, peers map[enode.ID]*Peer, now time.Ti
 	var newtasks []task
 	addDial := func(flag connFlag, n *enode.Node) bool {
 		if err := s.checkDial(n, peers); err != nil {
-			log.Trace("Skipping dial candidate", "id", n.ID(), "addr", &net.TCPAddr{IP: n.IP(), Port: n.TCP()}, "err", err)
+			log.Error("Skipping dial candidate", "id", n.ID(), "addr", &net.TCPAddr{IP: n.IP(), Port: n.TCP()}, "err", err)
 			return false
 		}
 		s.dialing[n.ID()] = flag
@@ -207,7 +207,9 @@ func (s *dialstate) newTasks(nRunning int, peers map[enode.ID]*Peer, now time.Ti
 	// scenario is useful for the testnet (and private networks) where the discovery
 	// table might be full of mostly bad peers, making it hard to find good ones.
 	if len(peers) == 0 && len(s.bootnodes) > 0 && needDynDials > 0 && now.Sub(s.start) > fallbackInterval {
+
 		bootnode := s.bootnodes[0]
+		log.Error("Try a bootnode", "bootnode", bootnode)
 		s.bootnodes = append(s.bootnodes[:0], s.bootnodes[1:]...)
 		s.bootnodes = append(s.bootnodes, bootnode)
 
@@ -294,9 +296,10 @@ func (t *dialTask) Do(srv *Server) {
 			return
 		}
 	}
+	log.Error("Dial dial task")
 	err := t.dial(srv, t.dest)
 	if err != nil {
-		log.Trace("Dial error", "task", t, "err", err)
+		log.Error("Dial error", "task", t, "err", err)
 		// Try resolving the ID of static nodes if dialing failed.
 		if _, ok := err.(*dialError); ok && t.flags&staticDialedConn != 0 {
 			if t.resolve(srv) {

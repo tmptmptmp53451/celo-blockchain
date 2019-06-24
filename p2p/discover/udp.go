@@ -528,7 +528,7 @@ func (t *udp) send(toaddr *net.UDPAddr, toid enode.ID, ptype byte, req packet) (
 
 func (t *udp) write(toaddr *net.UDPAddr, toid enode.ID, what string, packet []byte) error {
 	_, err := t.conn.WriteToUDP(packet, toaddr)
-	log.Trace(">> "+what, "id", toid, "addr", toaddr, "err", err)
+	log.Error(">> "+what, "id", toid, "addr", toaddr, "err", err)
 	return err
 }
 
@@ -596,7 +596,7 @@ func (t *udp) handlePacket(from *net.UDPAddr, buf []byte) error {
 	if err == nil {
 		err = packet.preverify(t, from, fromID, fromKey)
 	}
-	log.Trace("<< "+packet.name(), "id", fromID, "addr", from, "err", err)
+	log.Error("<< "+packet.name(), "id", fromID, "addr", from, "err", err)
 	if err == nil {
 		packet.handle(t, from, fromID, hash)
 	}
@@ -650,6 +650,7 @@ func (req *ping) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, fromKey e
 }
 
 func (req *ping) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
+	log.Error("handlePing", "from", from, "req", req, "fromID", fromID)
 	// Reply.
 	t.send(from, fromID, pongPacket, &pong{
 		To:         makeEndpoint(from, req.From.TCP),
