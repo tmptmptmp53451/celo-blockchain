@@ -721,15 +721,19 @@ func (pm *ProtocolManager) handleMsg(p *peer) error {
 		// Transactions can be processed, parse all of them and deliver to the pool
 		var txs []*types.Transaction
 		if err := msg.Decode(&txs); err != nil {
+			log.Error("Unable to decode transaction", "debug", "oines")
 			return errResp(ErrDecode, "msg %v: %v", msg, err)
 		}
 		for i, tx := range txs {
 			// Validate and mark the remote transaction
 			if tx == nil {
+				log.Error("Got nil transaction", "debug", "oines")
 				return errResp(ErrDecode, "transaction %d is nil", i)
 			}
+			log.Debug("Marking transaction", "hash", tx.Hash().Hex(), "debug", "oines")
 			p.MarkTransaction(tx.Hash())
 		}
+		log.Debug("Adding transactions to pool", "num", len(txs), "debug", "oines")
 		pm.txpool.AddRemotes(txs)
 
 	default:
