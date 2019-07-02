@@ -88,7 +88,7 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 	roundView := rc.View
 
 	// Add the ROUND CHANGE message to its message set.
-	if err := c.roundChangeSet.Add(roundView.Round, msg, src); err != nil {
+	if err := c.roundChangeSet.Add(roundView.Round, msg, src, c); err != nil {
 		logger.Warn("Failed to add round change message", "from", src, "roundView", roundView, "err", err)
 		return err
 	}
@@ -142,15 +142,19 @@ type roundChangeSet struct {
 }
 
 // Add adds the round and message into round change set
-func (rcs *roundChangeSet) Add(r *big.Int, msg *message, src istanbul.Validator) error {
+func (rcs *roundChangeSet) Add(r *big.Int, msg *message, src istanbul.Validator, c *core) error {
 	rcs.mu.Lock()
 	defer rcs.mu.Unlock()
 
 	round := r.Uint64()
+	idx, _ := c.valSet.GetByAddress(src.Address())
+	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "from_id", idx, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "rcsAdd")
+
 
 	if prevLatestRound, ok := rcs.latestRoundForVal[src.Address()]; ok {
 		if prevLatestRound > round {
 			// Reject as we have an RC for a later round from this validator.
+			logger.Debug("Message is old")
 			return errOldMessage
 		} else if prevLatestRound < round {
 			// Already got an RC for an earlier round from this validator.
@@ -160,6 +164,7 @@ func (rcs *roundChangeSet) Add(r *big.Int, msg *message, src istanbul.Validator)
 				if rcs.msgsForRound[prevLatestRound].Size() == 0 {
 					delete(rcs.msgsForRound, prevLatestRound)
 				}
+				logger.Debug("Deleting earlier Round Change Messages")
 			}
 		}
 	}
@@ -168,6 +173,7 @@ func (rcs *roundChangeSet) Add(r *big.Int, msg *message, src istanbul.Validator)
 
 	if rcs.msgsForRound[round] == nil {
 		rcs.msgsForRound[round] = newMessageSet(rcs.validatorSet)
+		logger.Debug("Creating new RC message set")
 	}
 	return rcs.msgsForRound[round].Add(msg)
 }
