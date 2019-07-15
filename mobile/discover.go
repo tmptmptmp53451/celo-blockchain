@@ -23,6 +23,7 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/p2p/discv5"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 )
 
 // Enode represents a host on the network.
@@ -63,6 +64,9 @@ func NewEnode(rawurl string) (enode *Enode, _ error) {
 
 // Enodes represents a slice of accounts.
 type Enodes struct{ nodes []*discv5.Node }
+
+// Tes
+type EnodesV4 struct{ nodes []*enode.Node }
 
 // NewEnodes creates a slice of uninitialized enodes.
 func NewEnodes(size int) *Enodes {

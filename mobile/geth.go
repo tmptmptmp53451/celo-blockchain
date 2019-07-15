@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/les"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/params"
 	whisper "github.com/ethereum/go-ethereum/whisper/whisperv6"
@@ -52,6 +53,9 @@ const UltraLightSync = 5
 // entire API provided by go-ethereum to reduce the maintenance surface and dev
 // complexity.
 type NodeConfig struct {
+	// test
+	Bootnodes *EnodesV4
+
 	// Bootstrap nodes used to establish connectivity with the rest of the network.
 	BootstrapNodes *Enodes
 
@@ -97,9 +101,12 @@ type NodeConfig struct {
 	UseLightweightKDF bool
 }
 
+var nodes = &EnodesV4{nodes: make([]*enode.Node, 0)}
+
 // defaultNodeConfig contains the default node configuration values to use if all
 // or some fields are missing from the user's specified list.
 var defaultNodeConfig = &NodeConfig{
+	Bootnodes:             nodes,
 	BootstrapNodes:        FoundationBootnodes(),
 	MaxPeers:              25,
 	EthereumEnabled:       true,
