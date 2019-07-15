@@ -31,6 +31,18 @@ type Enode struct {
 	node *discv5.Node
 }
 
+type EnodeV4 struct {
+	node *enode.Node
+}
+
+func NewEnodeV4(rawurl string) (enoderet *EnodeV4, _ error) {
+	node, err := enode.ParseV4(rawurl)
+	if err != nil {
+		return nil, err
+	}
+	return &EnodeV4{node}, nil
+}
+
 // NewEnode parses a node designator.
 //
 // There are two basic forms of node designators
