@@ -87,6 +87,12 @@ func NewEnodes(size int) *Enodes {
 	}
 }
 
+func NewEnodesV4(size int) *Enodes {
+	return &EnodesV4{
+		nodes: make([]*discv5.Node, size),
+	}
+}
+
 // NewEnodesEmpty creates an empty slice of Enode values.
 func NewEnodesEmpty() *Enodes {
 	return NewEnodes(0)
@@ -94,6 +100,16 @@ func NewEnodesEmpty() *Enodes {
 
 // Size returns the number of enodes in the slice.
 func (e *Enodes) Size() int {
+	return len(e.nodes)
+}
+
+// NewEnodesEmpty creates an empty slice of Enode values.
+func NewEnodesV4Empty() *EnodesV4 {
+	return NewEnodesV4(0)
+}
+
+// Size returns the number of enodesV4 in the slice.
+func (e *EnodesV4) Size() int {
 	return len(e.nodes)
 }
 
@@ -116,5 +132,27 @@ func (e *Enodes) Set(index int, enode *Enode) error {
 
 // Append adds a new enode element to the end of the slice.
 func (e *Enodes) Append(enode *Enode) {
+	e.nodes = append(e.nodes, enode.node)
+}
+
+// Get returns the enode at the given index from the slice.
+func (e *EnodesV4) Get(index int) (enode *EnodeV4, _ error) {
+	if index < 0 || index >= len(e.nodes) {
+		return nil, errors.New("index out of bounds")
+	}
+	return &Enode{e.nodes[index]}, nil
+}
+
+// Set sets the enode at the given index in the slice.
+func (e *EnodeV4) Set(index int, enode *EnodeV4) error {
+	if index < 0 || index >= len(e.nodes) {
+		return errors.New("index out of bounds")
+	}
+	e.nodes[index] = enode.node
+	return nil
+}
+
+// Append adds a new enode element to the end of the slice.
+func (e *EnodeV4sV4) Append(enode *EnodeV4) {
 	e.nodes = append(e.nodes, enode.node)
 }
