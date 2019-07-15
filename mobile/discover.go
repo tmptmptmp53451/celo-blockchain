@@ -144,7 +144,7 @@ func (e *EnodesV4) Get(index int) (enode *EnodeV4, _ error) {
 }
 
 // Set sets the enode at the given index in the slice.
-func (e *EnodeV4) Set(index int, enode *EnodeV4) error {
+func (e *EnodesV4) Set(index int, enode *EnodeV4) error {
 	if index < 0 || index >= len(e.nodes) {
 		return errors.New("index out of bounds")
 	}
@@ -153,6 +153,6 @@ func (e *EnodeV4) Set(index int, enode *EnodeV4) error {
 }
 
 // Append adds a new enode element to the end of the slice.
-func (e *EnodeV4sV4) Append(enode *EnodeV4) {
+func (e *EnodesV4) Append(enode *EnodeV4) {
 	e.nodes = append(e.nodes, enode.node)
 }
