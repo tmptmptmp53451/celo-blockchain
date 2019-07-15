@@ -87,9 +87,9 @@ func NewEnodes(size int) *Enodes {
 	}
 }
 
-func NewEnodesV4(size int) *Enodes {
+func NewEnodesV4(size int) *EnodesV4 {
 	return &EnodesV4{
-		nodes: make([]*discv5.Node, size),
+		nodes: make([]*enode.Node, size),
 	}
 }
 
@@ -140,7 +140,7 @@ func (e *EnodesV4) Get(index int) (enode *EnodeV4, _ error) {
 	if index < 0 || index >= len(e.nodes) {
 		return nil, errors.New("index out of bounds")
 	}
-	return &Enode{e.nodes[index]}, nil
+	return &EnodeV4{e.nodes[index]}, nil
 }
 
 // Set sets the enode at the given index in the slice.
