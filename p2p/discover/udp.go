@@ -753,7 +753,7 @@ func (req *neighbors) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, from
 }
 
 func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
-	log.Trace("Received neighbors packet", "addr", from, "fromID", fromID, "mac", mac, "now", time.Now().Unix(), "expiration": req.Expiration)
+	log.Trace("Received neighbors packet", "addr", from, "fromID", fromID, "mac", mac, "now", time.Now().Unix(), "expiration", req.Expiration)
 }
 
 func (req *neighbors) name() string { return "NEIGHBORS/v4" }
