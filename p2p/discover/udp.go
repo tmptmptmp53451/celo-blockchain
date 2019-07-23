@@ -409,6 +409,7 @@ func (t *udp) loop() {
 	defer timeout.Stop()
 
 	resetTimeout := func() {
+		log.Trace("trevor: resetting timeout")
 		if plist.Front() == nil || nextTimeout == plist.Front().Value {
 			return
 		}
@@ -417,6 +418,7 @@ func (t *udp) loop() {
 		for el := plist.Front(); el != nil; el = el.Next() {
 			nextTimeout = el.Value.(*replyMatcher)
 			if dist := nextTimeout.deadline.Sub(now); dist < 2*respTimeout {
+				log.Trace("trevor: really did reset timeout")
 				timeout.Reset(dist)
 				return
 			}
@@ -467,16 +469,18 @@ func (t *udp) loop() {
 
 		case now := <-timeout.C:
 			nextTimeout = nil
-
+			log.Trace("trevor: timeout!")
 			// Notify and remove callbacks whose deadline is in the past.
 			for el := plist.Front(); el != nil; el = el.Next() {
 				p := el.Value.(*replyMatcher)
 				if now.After(p.deadline) || now.Equal(p.deadline) {
+					log.Trace("trevor: in timeout loop", "pDeadline", p.deadline, "now", now, "pFrom", p.from, "pIp", p.ip, "pptype", p.ptype)
 					p.errc <- errTimeout
 					plist.Remove(el)
 					contTimeouts++
 				}
 			}
+			log.Trace("trevor: after removing timedout items", "contTimeouts", contTimeouts)
 			// If we've accumulated too many timeouts, do an NTP time sync check
 			if contTimeouts > ntpFailureThreshold {
 				if time.Since(ntpWarnTime) >= ntpWarningCooldown {
