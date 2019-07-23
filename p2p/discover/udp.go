@@ -475,6 +475,7 @@ func (t *udp) loop() {
 				p := el.Value.(*replyMatcher)
 				if now.After(p.deadline) || now.Equal(p.deadline) {
 					log.Trace("trevor: in timeout loop", "pDeadline", p.deadline, "now", now, "pFrom", p.from, "pIp", p.ip, "pptype", p.ptype)
+					log.Trace("trevor: timeout times but more detailed", "pDeadline", p.deadline.String(), "now", now.String())
 					p.errc <- errTimeout
 					plist.Remove(el)
 					contTimeouts++
