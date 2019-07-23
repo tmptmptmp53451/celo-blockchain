@@ -462,6 +462,7 @@ func (t *udp) loop() {
 					contTimeouts = 0
 				}
 			}
+			log.Trace("trevor: did it match", "matched", matched)
 			r.matched <- matched
 
 		case now := <-timeout.C:
