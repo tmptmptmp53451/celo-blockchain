@@ -446,8 +446,10 @@ func (t *udp) loop() {
 
 		case r := <-t.gotreply:
 			var matched bool // whether any replyMatcher considered the reply acceptable.
+			log.Trace("trevor: Got a reply")
 			for el := plist.Front(); el != nil; el = el.Next() {
 				p := el.Value.(*replyMatcher)
+				log.Trace("trevor: Checking for match", "pFrom", p.from, "rFrom", r.from, "pPType", p.ptype, "rPType", r.ptype, "pIP", p.ip, "rIP", r.ip)
 				if p.from == r.from && p.ptype == r.ptype && p.ip.Equal(r.ip) {
 					ok, requestDone := p.callback(r.data)
 					matched = matched || ok
@@ -587,7 +589,7 @@ func (t *udp) readLoop(unhandled chan<- ReadPacket) {
 }
 
 func (t *udp) handlePacket(from *net.UDPAddr, buf []byte) error {
-	log.Trace("Handling packet", "addr", from)
+	log.Trace("trevor: Handling packet", "addr", from)
 	packet, fromKey, hash, err := decodePacket(buf)
 	if err != nil {
 		log.Debug("Bad discv4 packet", "addr", from, "err", err)
@@ -723,7 +725,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
 	p := neighbors{Expiration: uint64(time.Now().Add(expiration).Unix())}
-	log.Trace("Handling findnode, sending neighbors packet", "expiration", p.Expiration)
+	log.Trace("trevor: Handling findnode, sending neighbors packet", "expiration", p.Expiration)
 	var sent bool
 	for _, n := range closest {
 		if netutil.CheckRelayIP(from.IP, n.IP()) == nil {
@@ -743,17 +745,21 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 func (req *findnode) name() string { return "FINDNODE/v4" }
 
 func (req *neighbors) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, fromKey encPubkey) error {
+	log.Trace("trevor: Preverifying neighbors packet")
 	if expired(req.Expiration) {
+		log.Trace("trevor: Neighbors packet expired")
 		return errExpired
 	}
 	if !t.handleReply(fromID, from.IP, neighborsPacket, req) {
+		log.Trace("trevor: Neighbors packet unsolicited")
 		return errUnsolicitedReply
 	}
+	log.Trace("trevor: Neighbors packet is preverified")
 	return nil
 }
 
 func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
-	log.Trace("Received neighbors packet", "addr", from, "fromID", fromID, "mac", mac, "now", time.Now().Unix(), "expiration", req.Expiration)
+	log.Trace("trevor: Received neighbors packet", "addr", from, "fromID", fromID, "mac", mac, "now", time.Now().Unix(), "expiration", req.Expiration)
 }
 
 func (req *neighbors) name() string { return "NEIGHBORS/v4" }
