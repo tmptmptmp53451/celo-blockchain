@@ -587,6 +587,7 @@ func (t *udp) readLoop(unhandled chan<- ReadPacket) {
 }
 
 func (t *udp) handlePacket(from *net.UDPAddr, buf []byte) error {
+	log.Trace("Handling packet", "addr", from)
 	packet, fromKey, hash, err := decodePacket(buf)
 	if err != nil {
 		log.Debug("Bad discv4 packet", "addr", from, "err", err)
@@ -722,6 +723,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
 	p := neighbors{Expiration: uint64(time.Now().Add(expiration).Unix())}
+	log.Trace("Handling findnode, sending neighbors packet", "expiration", neighbors.Expiration)
 	var sent bool
 	for _, n := range closest {
 		if netutil.CheckRelayIP(from.IP, n.IP()) == nil {
@@ -751,6 +753,7 @@ func (req *neighbors) preverify(t *udp, from *net.UDPAddr, fromID enode.ID, from
 }
 
 func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []byte) {
+	log.Trace("Received neighbors packet", "addr", from, "fromID", fromID, "mac", mac, "now", time.Now().Unix(), "expiration": req.Expiration)
 }
 
 func (req *neighbors) name() string { return "NEIGHBORS/v4" }
