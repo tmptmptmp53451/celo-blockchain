@@ -233,6 +233,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		f.WriteString("\n")
 		f.WriteString("JumpTable pointer address: ")
 		s := fmt.Sprintf("%p\n", &in.cfg.JumpTable)
+		stack.Write(f)
 
 		f.WriteString(s)
 		f.WriteString("\n")

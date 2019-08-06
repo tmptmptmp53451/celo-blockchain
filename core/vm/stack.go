@@ -87,12 +87,13 @@ func (st *Stack) Write(f *os.File) {
 	f.WriteString("### stack ### \n")
 	if len(st.data) > 0 {
 		for i, val := range st.data {
-			fmt.Printf("%-3d  %v\n", i, val)
+			dat := fmt.Sprintf("%-3d  %v\n", i, val)
+			f.WriteString(dat)
 		}
 	} else {
-		fmt.Println("-- empty --")
+		f.WriteString("-- empty --")
 	}
-	fmt.Println("#############")
+	f.WriteString("#############\n")
 }
 
 // Print dumps the content of the stack
