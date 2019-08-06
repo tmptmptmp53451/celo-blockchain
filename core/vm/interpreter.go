@@ -17,6 +17,7 @@
 package vm
 
 import (
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"os"
@@ -144,13 +145,15 @@ func (in *EVMInterpreter) enforceRestrictions(op OpCode, operation operation, st
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
 
-	f, err := os.Create("/tmp/arm64/ops")
+	f, err := os.Create("/tmp/arm64_ops")
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
-	f.WriteString("Contract Address:")
+	f.WriteString("Contract Address: ")
 	f.WriteString(contract.Address().Hex())
+	f.WriteString("Input arguments: ")
+	f.WriteString(hex.EncodeToString(input))
 	f.WriteString("\n")
 	log.Info("Wrote the contract address", "address", contract.Address())
 
@@ -276,7 +279,8 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// execute the operation
 		res, err := operation.execute(&pc, in, contract, mem, stack)
 		f.WriteString("Execution result: ")
-		f.Write(res)
+		f.WriteString(hex.EncodeToString(res))
+		f.WriteString("\n")
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
 		if verifyPool {
