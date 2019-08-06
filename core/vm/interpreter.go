@@ -19,6 +19,7 @@ package vm
 import (
 	"fmt"
 	"hash"
+	"os"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -142,6 +143,17 @@ func (in *EVMInterpreter) enforceRestrictions(op OpCode, operation operation, st
 // considered a revert-and-consume-all-gas operation except for
 // errExecutionReverted which means revert-and-keep-gas-left.
 func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (ret []byte, err error) {
+
+	f, err := os.Create("/tmp/arm64/ops")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	f.WriteString("Contract Address:")
+	f.Write(contract.Address().Bytes())
+	f.WriteString("\n")
+	log.Info("Wrote the contract address", "address", contract.Address())
+
 	if in.intPool == nil {
 		in.intPool = poolOfIntPools.get()
 		defer func() {
@@ -213,6 +225,10 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
+
+		f.WriteString(op.String())
+		f.WriteString("\n")
+
 		operation := in.cfg.JumpTable[op]
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
