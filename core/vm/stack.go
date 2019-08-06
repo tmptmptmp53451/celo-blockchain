@@ -19,6 +19,7 @@ package vm
 import (
 	"fmt"
 	"math/big"
+	"os"
 )
 
 // Stack is an object for basic stack operations. Items popped to the stack are
@@ -79,6 +80,19 @@ func (st *Stack) require(n int) error {
 		return fmt.Errorf("stack underflow (%d <=> %d)", len(st.data), n)
 	}
 	return nil
+}
+
+// Print dumps the content of the stack
+func (st *Stack) Write(f *os.File) {
+	f.WriteString("### stack ### \n")
+	if len(st.data) > 0 {
+		for i, val := range st.data {
+			fmt.Printf("%-3d  %v\n", i, val)
+		}
+	} else {
+		fmt.Println("-- empty --")
+	}
+	fmt.Println("#############")
 }
 
 // Print dumps the content of the stack

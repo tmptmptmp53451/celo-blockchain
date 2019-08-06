@@ -231,8 +231,14 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 
 		f.WriteString(op.String())
 		f.WriteString("\n")
+		f.WriteString("JumpTable pointer address: ")
+		s := fmt.Sprintf("%p\n", &in.cfg.JumpTable)
+
+		f.WriteString(s)
+		f.WriteString("\n")
 
 		operation := in.cfg.JumpTable[op]
+		//TODO: Make sure the operation is the same
 		if !operation.valid {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
 		}
