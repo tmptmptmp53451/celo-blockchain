@@ -150,7 +150,7 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 	}
 	defer f.Close()
 	f.WriteString("Contract Address:")
-	f.Write(contract.Address().Bytes())
+	f.WriteString(contract.Address().Hex())
 	f.WriteString("\n")
 	log.Info("Wrote the contract address", "address", contract.Address())
 
