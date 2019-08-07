@@ -231,12 +231,8 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 
 		f.WriteString(op.String())
 		f.WriteString("\n")
-		f.WriteString("JumpTable pointer address: ")
-		s := fmt.Sprintf("%p\n", &in.cfg.JumpTable)
 		stack.Write(f)
-
-		f.WriteString(s)
-		f.WriteString("\n")
+		mem.Write(f)
 
 		operation := in.cfg.JumpTable[op]
 		//TODO: Make sure the operation is the same
@@ -285,9 +281,9 @@ func (in *EVMInterpreter) Run(contract *Contract, input []byte, readOnly bool) (
 
 		// execute the operation
 		res, err := operation.execute(&pc, in, contract, mem, stack)
-		f.WriteString("Execution result: ")
-		f.WriteString(hex.EncodeToString(res))
-		f.WriteString("\n")
+		//f.WriteString("Execution result: ")
+		//f.WriteString(hex.EncodeToString(res))
+		//f.WriteString("\n")
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
 		if verifyPool {

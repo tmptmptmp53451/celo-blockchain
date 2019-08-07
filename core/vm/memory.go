@@ -19,6 +19,7 @@ package vm
 import (
 	"fmt"
 	"math/big"
+	"os"
 
 	"github.com/ethereum/go-ethereum/common/math"
 )
@@ -106,6 +107,24 @@ func (m *Memory) Len() int {
 // Data returns the backing slice
 func (m *Memory) Data() []byte {
 	return m.store
+}
+
+// Print write the content of the memory.
+func (m *Memory) Write(f *os.File) {
+	var s string
+	s = fmt.Sprintf("### mem %d bytes ###\n", len(m.store))
+	f.WriteString(s)
+	if len(m.store) > 0 {
+		addr := 0
+		for i := 0; i+32 <= len(m.store); i += 32 {
+			s = fmt.Sprintf("%03d: % x\n", addr, m.store[i:i+32])
+			f.WriteString(s)
+			addr++
+		}
+	} else {
+		f.WriteString("-- empty --")
+	}
+	f.WriteString("####################")
 }
 
 // Print dumps the content of the memory.

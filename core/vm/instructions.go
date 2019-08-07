@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"golang.org/x/crypto/sha3"
 )
@@ -944,6 +945,7 @@ func makePush(size uint64, pushByteSize int) executionFunc {
 // make dup instruction function
 func makeDup(size int64) executionFunc {
 	return func(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+		log.Info("arm64", "pc", pc, "int(size)", int(size))
 		stack.dup(interpreter.intPool, int(size))
 		return nil, nil
 	}
