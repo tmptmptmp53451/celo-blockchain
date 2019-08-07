@@ -329,14 +329,18 @@ func opMulmod(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memor
 func opSHL(pc *uint64, interpreter *EVMInterpreter, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	// Note, second operand is left in the stack; accumulate result into it, and no need to push it afterwards
 	shift, value := math.U256(stack.pop()), math.U256(stack.peek())
+	log.Info("arm64", "shift", shift, "value", value)
 	defer interpreter.intPool.put(shift) // First operand back into the pool
 
 	if shift.Cmp(common.Big256) >= 0 {
+		log.Info("arm64 - shift is too big bruhh")
 		value.SetUint64(0)
 		return nil, nil
 	}
 	n := uint(shift.Uint64())
+	log.Info("arm64 uint n", "n", n)
 	math.U256(value.Lsh(value, n))
+	log.Info("arm64 - leftshift", "mathU256", math.U256(value.Lsh(value, n)))
 
 	return nil, nil
 }
