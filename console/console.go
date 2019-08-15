@@ -132,6 +132,10 @@ func (c *Console) init(preload []string) error {
 	if _, err := c.jsre.Run("var web3 = new Web3(jeth);"); err != nil {
 		return fmt.Errorf("web3 provider: %v", err)
 	}
+
+	if err := c.jsre.Compile("contractkit.js", jsre.ContractKit_JS); err != nil {
+		return fmt.Errorf("contractkit.js: %v", err)
+	}
 	// Load the supported APIs into the JavaScript runtime environment
 	apis, err := c.client.SupportedModules()
 	if err != nil {
