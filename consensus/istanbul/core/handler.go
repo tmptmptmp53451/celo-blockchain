@@ -32,6 +32,8 @@ func (c *core) ParentCommits() MessageSet {
 
 // Start implements core.Engine.Start
 func (c *core) Start() error {
+	loger := c.logger.New("faultyMode", c.config.FaultyMode.String(), "func", "core.Start")
+	logger.Info("Started istanbul core.Engine")
 	// Start a new round from last sequence + 1
 	c.startNewRound(common.Big0)
 
@@ -175,6 +177,11 @@ func (c *core) handleCheckedMsg(msg *istanbul.Message, src istanbul.Validator) e
 		return err
 	}
 
+	if msg.Code != istanbul.MsgRoundChange && c.alwaysRoundChange() {
+		logger.Info("Send faulty round change", "round", c.current.Round().Uint64())
+		c.sendNextRoundChange()
+		return nil
+	}
 	switch msg.Code {
 	case istanbul.MsgPreprepare:
 		return catchFutureMessages(c.handlePreprepare(msg))

@@ -27,9 +27,10 @@ import (
 func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate istanbul.RoundChangeCertificate) {
 	logger := c.newLogger("func", "sendPreprepare")
 
-	// If I'm the proposer and I have the same sequence with the proposal
-	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer() {
-		curView := c.current.View()
+	// If I'm the proposer and I have the same sequence with the proposal OR I'm faulty
+	faultyPropose := c.alwaysPropose()
+	if (c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.isProposer()) || faultyPropose {
+		curView := c.currentView()
 		preprepare, err := Encode(&istanbul.Preprepare{
 			View:                   curView,
 			Proposal:               request.Proposal,
@@ -40,7 +41,8 @@ func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate 
 			return
 		}
 
-		msg := &istanbul.Message{
+		logger.Trace("Sending preprepare", "is_proposer", c.isProposer(), "faultyPropose", faultyPropose)
+		c.broadcast(&istanbul.Message{
 			Code: istanbul.MsgPreprepare,
 			Msg:  preprepare,
 		}

@@ -263,6 +263,9 @@ var AppHelpFlagGroups = []flagGroup{
 		Name: "MISC",
 		Flags: []cli.Flag{
 			utils.VersionCheckFlag,
+			utils.IstanbulRequestTimeoutFlag,
+			utils.IstanbulBlockPeriodFlag,
+			utils.IstanbulFaultyModeFlag,
 		},
 	},
 }

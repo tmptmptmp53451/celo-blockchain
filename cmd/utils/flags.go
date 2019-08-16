@@ -686,6 +686,13 @@ var (
 		Name:  "proxy.proxyenodeurlpair",
 		Usage: "proxy enode URL pair separated by a semicolon.  The format should be \"<internal facing enode URL>;<external facing enode URL>\"",
 	}
+
+	// Faulty mode settings
+	IstanbulFaultyModeFlag = cli.Uint64Flag{
+		Name:  "istanbul.faultymode",
+		Usage: "0: not faulty, 1: inject random faults, 2+ specific faults (see code)",
+		Value: eth.DefaultConfig.Istanbul.FaultyMode,
+	}
 )
 
 // MakeDataDir retrieves the currently requested data directory, terminating
@@ -1198,6 +1205,7 @@ func setIstanbul(ctx *cli.Context, stack *node.Node, cfg *eth.Config) {
 	if ctx.GlobalIsSet(IstanbulBlockPeriodFlag.Name) {
 		cfg.Istanbul.BlockPeriod = ctx.GlobalUint64(IstanbulBlockPeriodFlag.Name)
 	}
+<<<<<<< HEAD
 	if ctx.GlobalIsSet(IstanbulProposerPolicyFlag.Name) {
 		cfg.Istanbul.ProposerPolicy = istanbul.ProposerPolicy(ctx.GlobalUint64(IstanbulProposerPolicyFlag.Name))
 	}
@@ -1271,6 +1279,10 @@ func SetProxyConfig(ctx *cli.Context, nodeCfg *node.Config, ethCfg *eth.Config) 
 		if !ctx.GlobalBool(NoDiscoverFlag.Name) {
 			Fatalf("Option --%s must be used if option --%s is used", NoDiscoverFlag.Name, ProxiedFlag.Name)
 		}
+=======
+	if ctx.GlobalIsSet(IstanbulFaultyModeFlag.Name) {
+		cfg.Istanbul.FaultyMode = ctx.GlobalUint64(IstanbulFaultyModeFlag.Name)
+>>>>>>> b4ae9e726... Implements various faulty behaviors for Istanbul validators
 	}
 }
 

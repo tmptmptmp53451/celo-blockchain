@@ -147,6 +147,7 @@ var (
 		utils.ProxiedValidatorAddressFlag,
 		utils.ProxiedFlag,
 		utils.ProxyEnodeURLPairFlag,
+		utils.IstanbulFaultyModeFlag,
 	}
 
 	rpcFlags = []cli.Flag{
