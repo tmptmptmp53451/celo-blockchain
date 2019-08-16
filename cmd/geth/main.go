@@ -143,6 +143,7 @@ var (
 		utils.PingIPFromPacketFlag,
 		utils.UseInMemoryDiscoverTable,
 		utils.VersionCheckFlag,
+		utils.IstanbulFaultyModeFlag,
 	}
 
 	rpcFlags = []cli.Flag{
