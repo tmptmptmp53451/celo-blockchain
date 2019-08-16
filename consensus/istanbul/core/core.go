@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -127,6 +128,11 @@ func (c *core) finalizeMessage(msg *istanbul.Message) ([]byte, error) {
 		return nil, err
 	}
 
+	if c.modifySig() {
+		c.logger.Info("Modify the signature")
+		str := "fake"
+		copy(msg.Signature[:len(str)], []byte(str)[:])
+	}
 	// Convert to payload
 	payload, err := msg.Payload()
 	if err != nil {
@@ -138,6 +144,17 @@ func (c *core) finalizeMessage(msg *istanbul.Message) ([]byte, error) {
 
 func (c *core) broadcast(msg *istanbul.Message) {
 	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence())
+
+	if c.notBroadcast() {
+		logger.Info("Not broadcast message", "message", msg)
+		return
+	}
+
+	if c.sendWrongMsg() {
+		code := uint64(rand.Intn(4))
+		logger.Info("Modify the message code", "old", msg.Code, "new", code)
+		msg.Code = code
+	}
 
 	payload, err := c.finalizeMessage(msg)
 	if err != nil {
