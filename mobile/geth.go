@@ -55,6 +55,8 @@ const UltraLightSync = 5
 // entire API provided by go-ethereum to reduce the maintenance surface and dev
 // complexity.
 type NodeConfig struct {
+	BootstrapEnodeUrls []string
+
 	// Bootstrap nodes used to establish connectivity with the rest of the network.
 	BootstrapNodes *Enodes
 
@@ -106,7 +108,7 @@ type NodeConfig struct {
 // defaultNodeConfig contains the default node configuration values to use if all
 // or some fields are missing from the user's specified list.
 var defaultNodeConfig = &NodeConfig{
-	BootstrapNodes:        FoundationBootnodes(),
+	BootstrapNodes:        &Enodes{},
 	MaxPeers:              25,
 	EthereumEnabled:       true,
 	EthereumNetworkID:     1,
@@ -133,6 +135,16 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 	if config.MaxPeers == 0 {
 		config.MaxPeers = defaultNodeConfig.MaxPeers
 	}
+	if len(config.BootstrapEnodeUrls) > 0 {
+		config.BootstrapNodes = NewEnodes(len(config.BootstrapEnodeUrls))
+		for i := 0; i < len(config.BootstrapEnodeUrls); i++ {
+			enode, err := NewEnode(config.BootstrapEnodeUrls[i])
+			if err != nil {
+				return nil, err
+			}
+			config.BootstrapNodes.nodes[i] = enode.node
+		}
+	}
 	if config.BootstrapNodes == nil || config.BootstrapNodes.Size() == 0 {
 		config.BootstrapNodes = defaultNodeConfig.BootstrapNodes
 	}
@@ -152,7 +164,7 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 		P2P: p2p.Config{
 			NoDiscovery:      !config.PeerDiscovery,
 			DiscoveryV5:      false,
-			BootstrapNodesV5: config.BootstrapNodes.nodes,
+			BootstrapNodes:	  config.BootstrapNodes.nodes,
 			ListenAddr:       ":0",
 			NAT:              nat.Any(),
 			MaxPeers:         config.MaxPeers,

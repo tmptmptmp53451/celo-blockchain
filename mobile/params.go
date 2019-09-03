@@ -22,8 +22,8 @@ import (
 	"encoding/json"
 
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/p2p/discv5"
-	"github.com/ethereum/go-ethereum/params"
+	// "github.com/ethereum/go-ethereum/p2p/discv5"
+	// "github.com/ethereum/go-ethereum/params"
 )
 
 // MainnetGenesis returns the JSON spec to use for the main Ethereum network. It
@@ -50,12 +50,12 @@ func RinkebyGenesis() string {
 	return string(enc)
 }
 
-// FoundationBootnodes returns the enode URLs of the P2P bootstrap nodes operated
-// by the foundation running the V5 discovery protocol.
-func FoundationBootnodes() *Enodes {
-	nodes := &Enodes{nodes: make([]*discv5.Node, len(params.DiscoveryV5Bootnodes))}
-	for i, url := range params.DiscoveryV5Bootnodes {
-		nodes.nodes[i] = discv5.MustParseNode(url)
-	}
-	return nodes
-}
+// // FoundationBootnodes returns the enode URLs of the P2P bootstrap nodes operated
+// // by the foundation running the V5 discovery protocol.
+// func FoundationBootnodes() *Enodes {
+// 	nodes := &Enodes{nodes: make([]*discv5.Node, len(params.DiscoveryV5Bootnodes))}
+// 	for i, url := range params.DiscoveryV5Bootnodes {
+// 		nodes.nodes[i] = discv5.MustParseNode(url)
+// 	}
+// 	return nodes
+// }
