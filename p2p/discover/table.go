@@ -395,6 +395,7 @@ loop:
 		case <-revalidate.C:
 			revalidateDone = make(chan struct{})
 			go tab.doRevalidate(revalidateDone)
+			log.Info("Table dump", "table", tab.Info())
 		case <-revalidateDone:
 			revalidate.Reset(tab.nextRevalidateTime())
 			revalidateDone = nil
