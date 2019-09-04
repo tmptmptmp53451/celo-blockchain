@@ -340,6 +340,7 @@ func (tab *Table) findnode(n *node, targetKey encPubkey, reply chan<- []*node) {
 
 	// Grab as many nodes as possible. Some of them might not be alive anymore, but we'll
 	// just remove those again during revalidation.
+	log.Info("Adding nodes to discovery table", "number", len(r))
 	for _, n := range r {
 		tab.addSeenNode(n)
 	}
@@ -572,6 +573,7 @@ func (tab *Table) bucket(id enode.ID) *bucket {
 //
 // The caller must not hold tab.mutex.
 func (tab *Table) addSeenNode(n *node) {
+	log.Trace("addSeenNode: called", "id", n.ID(), "ip", n.IP())
 	if n.ID() == tab.self().ID() {
 		return
 	}
@@ -581,15 +583,18 @@ func (tab *Table) addSeenNode(n *node) {
 	b := tab.bucket(n.ID())
 	if contains(b.entries, n.ID()) {
 		// Already in bucket, don't add.
+		log.Trace("addSeenNode: already in bucket")
 		return
 	}
 	if len(b.entries) >= bucketSize {
 		// Bucket full, maybe add as replacement.
+		log.Trace("addSeenNode: bucket full")
 		tab.addReplacement(b, n)
 		return
 	}
 	if !tab.addIP(b, n.IP()) {
 		// Can't add: IP limit reached.
+		log.Trace("addSeenNode: can't add IP")
 		return
 	}
 	// Add to end of bucket:

@@ -739,7 +739,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 		}
 		if len(p.Nodes) == maxNeighbors {
 		        pJson, _ := json.Marshal(p)
-		        log.Info("Sending a neighborsPacket", "p", string(pJson))
+		        log.Info("Sending a neighborsPacket", "p", string(pJson), "toid", fromID, "num nodes", len(p.Nodes))
 			t.send(from, fromID, neighborsPacket, &p)
 			p.Nodes = p.Nodes[:0]
 			sent = true
@@ -747,7 +747,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 	}
 	if len(p.Nodes) > 0 || !sent {
 	        pJson, _ := json.Marshal(p)
-	        log.Info("Sending a neighborsPacket", "p", string(pJson))
+	        log.Info("Sending a neighborsPacket", "p", string(pJson), "toid", fromID, "num nodes", len(p.Nodes))
 		t.send(from, fromID, neighborsPacket, &p)
 	}
 }
