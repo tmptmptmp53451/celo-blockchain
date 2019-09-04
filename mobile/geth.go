@@ -55,6 +55,7 @@ const UltraLightSync = 5
 // entire API provided by go-ethereum to reduce the maintenance surface and dev
 // complexity.
 type NodeConfig struct {
+	// BootstrapEnodeUrls are the enode urls of the bootstrap nodes to be used
 	BootstrapEnodeUrls []string
 
 	// Bootstrap nodes used to establish connectivity with the rest of the network.
