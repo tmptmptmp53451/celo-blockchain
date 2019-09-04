@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"container/list"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -737,12 +738,16 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromID enode.ID, mac []by
 			p.Nodes = append(p.Nodes, nodeToRPC(n))
 		}
 		if len(p.Nodes) == maxNeighbors {
+		        pJson, _ := json.Marshal(p)
+		        log.Info("Sending a neighborsPacket", "p", string(pJson))
 			t.send(from, fromID, neighborsPacket, &p)
 			p.Nodes = p.Nodes[:0]
 			sent = true
 		}
 	}
 	if len(p.Nodes) > 0 || !sent {
+	        pJson, _ := json.Marshal(p)
+	        log.Info("Sending a neighborsPacket", "p", string(pJson))
 		t.send(from, fromID, neighborsPacket, &p)
 	}
 }
