@@ -559,10 +559,6 @@ var (
 		Name:  "netrestrict",
 		Usage: "Restricts network communication to the given IP networks (CIDR masks)",
 	}
-	PingIPFromPacketFlag = cli.BoolFlag{
-		Name:  "ping-ip-from-packet",
-		Usage: "Has the discovery protocol use the IP address given by a ping packet",
-	}
 
 	// ATM the url is left to the user and deployment to
 	JSpathFlag = cli.StringFlag{
@@ -991,9 +987,6 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 	}
 	if ctx.GlobalIsSet(NoDiscoverFlag.Name) || lightClient {
 		cfg.NoDiscovery = true
-	}
-	if ctx.GlobalIsSet(PingIPFromPacketFlag.Name) {
-		cfg.PingIPFromPacket = true
 	}
 
 	// if we're running a light client or server, force enable the v5 peer discovery
