@@ -26,6 +26,7 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	mrand "math/rand"
 	"net"
@@ -395,7 +396,8 @@ loop:
 		case <-revalidate.C:
 			revalidateDone = make(chan struct{})
 			go tab.doRevalidate(revalidateDone)
-			log.Info("Table dump", "table", tab.Info())
+			tabInfo, _ := json.Marshal(*(tab.Info()))
+			log.Info("Table dump", "table", string(tabInfo))
 		case <-revalidateDone:
 			revalidate.Reset(tab.nextRevalidateTime())
 			revalidateDone = nil
