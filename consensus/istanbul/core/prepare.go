@@ -31,14 +31,15 @@ func (c *core) sendPrepare() {
 		logger.Error("Failed to encode", "subject", sub)
 		return
 	}
+
 	logger.Trace("Sending prepare")
-	c.broadcast(&message{
-		Code: msgPrepare,
+	c.broadcast(&istanbul.Message{
+		Code: istanbul.MsgPrepare,
 		Msg:  encodedSubject,
 	})
 }
 
-func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
+func (c *core) handlePrepare(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handlePrepare")
 	// Decode PREPARE message
 	var prepare *istanbul.Subject
@@ -47,7 +48,7 @@ func (c *core) handlePrepare(msg *message, src istanbul.Validator) error {
 		return errFailedDecodePrepare
 	}
 
-	if err := c.checkMessage(msgPrepare, prepare.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgPrepare, prepare.View); err != nil {
 		return err
 	}
 
@@ -85,7 +86,7 @@ func (c *core) verifyPrepare(prepare *istanbul.Subject, src istanbul.Validator) 
 	return nil
 }
 
-func (c *core) acceptPrepare(msg *message, src istanbul.Validator) error {
+func (c *core) acceptPrepare(msg *istanbul.Message, src istanbul.Validator) error {
 	logger := c.logger.New("from", src, "state", c.state, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "acceptPrepare")
 
 	// Add the PREPARE message to current round state

@@ -29,7 +29,7 @@ import (
 func newMessageSet(valSet istanbul.ValidatorSet) *messageSet {
 	return &messageSet{
 		messagesMu: new(sync.Mutex),
-		messages:   make(map[common.Address]*message),
+		messages:   make(map[common.Address]*istanbul.Message),
 		valSet:     valSet,
 	}
 }
@@ -39,10 +39,10 @@ func newMessageSet(valSet istanbul.ValidatorSet) *messageSet {
 type messageSet struct {
 	valSet     istanbul.ValidatorSet
 	messagesMu *sync.Mutex
-	messages   map[common.Address]*message
+	messages   map[common.Address]*istanbul.Message
 }
 
-func (ms *messageSet) Add(msg *message) error {
+func (ms *messageSet) Add(msg *istanbul.Message) error {
 	ms.messagesMu.Lock()
 	defer ms.messagesMu.Unlock()
 
@@ -88,7 +88,7 @@ func (ms *messageSet) Remove(address common.Address) {
 	delete(ms.messages, address)
 }
 
-func (ms *messageSet) Values() (result []*message) {
+func (ms *messageSet) Values() (result []*istanbul.Message) {
 	ms.messagesMu.Lock()
 	defer ms.messagesMu.Unlock()
 
@@ -105,7 +105,7 @@ func (ms *messageSet) Size() int {
 	return len(ms.messages)
 }
 
-func (ms *messageSet) Get(addr common.Address) *message {
+func (ms *messageSet) Get(addr common.Address) *istanbul.Message {
 	ms.messagesMu.Lock()
 	defer ms.messagesMu.Unlock()
 	return ms.messages[addr]
@@ -113,7 +113,7 @@ func (ms *messageSet) Get(addr common.Address) *message {
 
 // ----------------------------------------------------------------------------
 
-func (ms *messageSet) verify(msg *message) error {
+func (ms *messageSet) verify(msg *istanbul.Message) error {
 	// verify if the message comes from one of the validators
 	if _, v := ms.valSet.GetByAddress(msg.Address); v == nil {
 		return istanbul.ErrUnauthorizedAddress
@@ -121,7 +121,7 @@ func (ms *messageSet) verify(msg *message) error {
 	return nil
 }
 
-func (ms *messageSet) addVerifiedMessage(msg *message) error {
+func (ms *messageSet) addVerifiedMessage(msg *istanbul.Message) error {
 	ms.messages[msg.Address] = msg
 	return nil
 }

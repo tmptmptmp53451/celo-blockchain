@@ -25,11 +25,11 @@ import (
 
 var (
 	// msgPriority is defined for calculating processing priority to speedup consensus
-	// msgPreprepare > msgPrepare > msgCommit
+	// istanbul.MsgPreprepare > istanbul.MsgCommit > istanbul.MsgPrepare
 	msgPriority = map[uint64]int{
-		msgPreprepare: 1,
-		msgCommit:     3,
-		msgPrepare:    2,
+		istanbul.MsgPreprepare: 1,
+		istanbul.MsgCommit:     3,
+		istanbul.MsgPrepare:    2,
 	}
 
 	acceptMaxFutureViews                = big.NewInt(10)
@@ -52,7 +52,7 @@ func (c *core) checkMessage(msgCode uint64, view *istanbul.View) error {
 		return errTooFarInTheFutureMessage
 	}
 
-	if msgCode == msgRoundChange {
+	if msgCode == istanbul.MsgRoundChange {
 		if view.Sequence.Cmp(c.currentView().Sequence) > 0 {
 			return errFutureMessage
 		} else if view.Cmp(c.currentView()) < 0 {
@@ -73,10 +73,10 @@ func (c *core) checkMessage(msgCode uint64, view *istanbul.View) error {
 		return errFutureMessage
 	}
 
-	// StateAcceptRequest only accepts msgPreprepare
+	// StateAcceptRequest only accepts istanbul.MsgPreprepare
 	// other messages are future messages
 	if c.state == StateAcceptRequest {
-		if msgCode > msgPreprepare {
+		if msgCode > istanbul.MsgPreprepare {
 			return errFutureMessage
 		}
 		return nil
@@ -87,7 +87,7 @@ func (c *core) checkMessage(msgCode uint64, view *istanbul.View) error {
 	return nil
 }
 
-func (c *core) storeBacklog(msg *message, src istanbul.Validator) {
+func (c *core) storeBacklog(msg *istanbul.Message, src istanbul.Validator) {
 	var msgType string
 	switch msg.Code {
 	case msgPreprepare:
@@ -110,7 +110,7 @@ func (c *core) storeBacklog(msg *message, src istanbul.Validator) {
 
 	var v *istanbul.View
 	switch msg.Code {
-	case msgPreprepare:
+	case istanbul.MsgPreprepare:
 		var p *istanbul.Preprepare
 		err := msg.Decode(&p)
 		if err != nil {
@@ -219,7 +219,7 @@ func (c *core) processBacklog() {
 			c.drainBacklogForSeq(seq, func(msg *message, src istanbul.Validator) {
 				var view *istanbul.View
 				switch msg.Code {
-				case msgPreprepare:
+				case istanbul.MsgPreprepare:
 					var m *istanbul.Preprepare
 					err := msg.Decode(&m)
 					if err == nil {
@@ -261,7 +261,7 @@ func (c *core) processBacklog() {
 }
 
 func toPriority(msgCode uint64, view *istanbul.View) int64 {
-	if msgCode == msgRoundChange {
+	if msgCode == istanbul.MsgRoundChange {
 		// msgRoundChange comes first
 		return 0
 	}

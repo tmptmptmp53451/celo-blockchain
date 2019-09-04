@@ -63,16 +63,15 @@ func (c *core) sendRoundChange(round *big.Int) {
 		return
 	}
 
-	c.broadcast(&message{
-		Code: msgRoundChange,
+	c.broadcast(&istanbul.Message{
+		Code: istanbul.MsgRoundChange,
 		Msg:  payload,
 	})
 }
 
-func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
+func (c *core) handleRoundChange(msg *istanbul.Message, src istanbul.Validator) error {
 	idx, _ := c.valSet.GetByAddress(src.Address())
 	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "from_id", idx, "cur_round", c.current.Round(), "cur_seq", c.current.Sequence(), "func", "handleRoundChange")
-
 	// Decode ROUND CHANGE message
 	var rc *istanbul.Subject
 	if err := msg.Decode(&rc); err != nil {
@@ -80,7 +79,7 @@ func (c *core) handleRoundChange(msg *message, src istanbul.Validator) error {
 		return errInvalidMessage
 	}
 
-	if err := c.checkMessage(msgRoundChange, rc.View); err != nil {
+	if err := c.checkMessage(istanbul.MsgRoundChange, rc.View); err != nil {
 		return err
 	}
 
