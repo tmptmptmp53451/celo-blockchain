@@ -199,7 +199,7 @@ func (c *core) handleTimeoutMsg() {
 
 	lastProposal, _ := c.backend.LastProposal()
 	if lastProposal != nil && lastProposal.Number().Cmp(c.current.Sequence()) >= 0 {
-		logger.Trace("round change timeout, catch up latest sequence", "number", lastProposal.Number().Uint64(), "cur_seq", c.current.Sequence(), "cur_round", c.current.Round())
+		logger.Trace("round change timeout, catch up latest sequence", "number", lastProposal.Number().Uint64())
 		c.startNewRound(common.Big0)
 	} else {
 		logger.Trace("round change timeout, send next round change")
