@@ -88,20 +88,7 @@ func (c *core) checkMessage(msgCode uint64, view *istanbul.View) error {
 }
 
 func (c *core) storeBacklog(msg *istanbul.Message, src istanbul.Validator) {
-	var msgType string
-	switch msg.Code {
-	case msgPreprepare:
-		msgType = "msgPreprepare"
-	case msgPrepare:
-		msgType = "msgPrepare"
-	case msgCommit:
-		msgType = "msgCommit"
-	case msgRoundChange:
-		msgType = "msgRoundChange"
-	default:
-		msgType = "msgUnknown"
-	}
-	logger := c.logger.New("address", c.address, "from", src, "state", c.state, "func", "storeBacklog", "msgType", msgType)
+	logger := c.logger.New("address", c.address, "from", src, "state", c.state, "func", "storeBacklog", "msgCode", msg.Code)
 
 	if src.Address() == c.Address() {
 		logger.Warn("Backlog from self")
@@ -181,7 +168,7 @@ func (c *core) getSortedBacklogSeqs() []uint64 {
 
 // Drain a backlog for a given sequence, passing each to optional callback.
 // Call with backlogsMu held.
-func (c *core) drainBacklogForSeq(seq uint64, cb func(*message, istanbul.Validator)) {
+func (c *core) drainBacklogForSeq(seq uint64, cb func(*istanbul.Message, istanbul.Validator)) {
 	backlogForSeq := c.backlogBySeq[seq]
 	if backlogForSeq == nil {
 		return
@@ -189,7 +176,7 @@ func (c *core) drainBacklogForSeq(seq uint64, cb func(*message, istanbul.Validat
 
 	for !backlogForSeq.Empty() {
 		m := backlogForSeq.PopItem()
-		msg := m.(*message)
+		msg := m.(*istanbul.Message)
 		if cb != nil {
 			_, src := c.valSet.GetByAddress(msg.Address)
 			if src != nil {
@@ -216,7 +203,7 @@ func (c *core) processBacklog() {
 			c.drainBacklogForSeq(seq, nil)
 		} else if seq == c.currentView().Sequence.Uint64() {
 			// Current sequence. Process all in order.
-			c.drainBacklogForSeq(seq, func(msg *message, src istanbul.Validator) {
+			c.drainBacklogForSeq(seq, func(msg *istanbul.Message, src istanbul.Validator) {
 				var view *istanbul.View
 				switch msg.Code {
 				case istanbul.MsgPreprepare:

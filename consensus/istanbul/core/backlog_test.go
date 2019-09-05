@@ -200,8 +200,8 @@ func TestStoreBacklog(t *testing.T) {
 	}
 
 	sPreprepare, _ := Encode(preprepare)
-	mPreprepare := &message{
-		Code:    msgPreprepare,
+	mPreprepare := &istanbul.Message{
+		Code:    istanbul.MsgPreprepare,
 		Msg:     sPreprepare,
 		Address: p1.Address(),
 	}
@@ -211,8 +211,8 @@ func TestStoreBacklog(t *testing.T) {
 		Digest: common.BytesToHash([]byte("1234567890")),
 	}
 	sPrepare, _ := Encode(subject)
-	mPrepare := &message{
-		Code:    msgPrepare,
+	mPrepare := &istanbul.Message{
+		Code:    istanbul.MsgPrepare,
 		Msg:     sPrepare,
 		Address: p1.Address(),
 	}
@@ -223,8 +223,8 @@ func TestStoreBacklog(t *testing.T) {
 		Proposal: makeBlock(1),
 	}
 	sPreprepare2, _ := Encode(preprepare2)
-	mPreprepare2 := &message{
-		Code:    msgPreprepare,
+	mPreprepare2 := &istanbul.Message{
+		Code:    istanbul.MsgPreprepare,
 		Msg:     sPreprepare2,
 		Address: p2.Address(),
 	}
@@ -296,8 +296,8 @@ func TestProcessFutureBacklog(t *testing.T) {
 		Digest: common.BytesToHash([]byte("1234567890")),
 	}
 	subjectPayload, _ := Encode(subject)
-	mFuture := &message{
-		Code:    msgCommit,
+	mFuture := &istanbul.Message{
+		Code:    istanbul.MsgCommit,
 		Msg:     subjectPayload,
 		Address: valSet.GetByIndex(0).Address(),
 	}
@@ -313,8 +313,8 @@ func TestProcessFutureBacklog(t *testing.T) {
 		Digest: common.BytesToHash([]byte("1234567890")),
 	}
 	subjectPayload0, _ := Encode(subject0)
-	mPast := &message{
-		Code:    msgRoundChange,
+	mPast := &istanbul.Message{
+		Code:    istanbul.MsgRoundChange,
 		Msg:     subjectPayload0,
 		Address: valSet.GetByIndex(1).Address(),
 	}

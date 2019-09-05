@@ -18,6 +18,7 @@ package core
 
 import (
 	"fmt"
+	"math/big"
 	"strings"
 	"sync"
 
@@ -28,6 +29,10 @@ import (
 // Construct a new message set to accumulate messages for given sequence/view number.
 func newMessageSet(valSet istanbul.ValidatorSet) *messageSet {
 	return &messageSet{
+		view: &istanbul.View{
+			Round:    new(big.Int),
+			Sequence: new(big.Int),
+		},
 		messagesMu: new(sync.Mutex),
 		messages:   make(map[common.Address]*istanbul.Message),
 		valSet:     valSet,
@@ -37,9 +42,14 @@ func newMessageSet(valSet istanbul.ValidatorSet) *messageSet {
 // ----------------------------------------------------------------------------
 
 type messageSet struct {
+	view       *istanbul.View
 	valSet     istanbul.ValidatorSet
 	messagesMu *sync.Mutex
 	messages   map[common.Address]*istanbul.Message
+}
+
+func (ms *messageSet) View() *istanbul.View {
+	return ms.view
 }
 
 func (ms *messageSet) Add(msg *istanbul.Message) error {
@@ -81,13 +91,6 @@ func (ms *messageSet) ValSetSize() uint64 {
 	return uint64(ms.valSet.Size())
 }
 
-func (ms *messageSet) Remove(address common.Address) {
-	ms.messagesMu.Lock()
-	defer ms.messagesMu.Unlock()
-
-	delete(ms.messages, address)
-}
-
 func (ms *messageSet) Values() (result []*istanbul.Message) {
 	ms.messagesMu.Lock()
 	defer ms.messagesMu.Unlock()
@@ -118,6 +121,9 @@ func (ms *messageSet) verify(msg *istanbul.Message) error {
 	if _, v := ms.valSet.GetByAddress(msg.Address); v == nil {
 		return istanbul.ErrUnauthorizedAddress
 	}
+
+	// TODO: check view number and sequence number
+
 	return nil
 }
 
@@ -133,5 +139,5 @@ func (ms *messageSet) String() string {
 	for _, v := range ms.messages {
 		addresses = append(addresses, v.Address.String())
 	}
-	return fmt.Sprintf("[<%v> %v]", len(ms.messages), strings.Join(addresses, ", "))
+	return fmt.Sprintf("[%v]", strings.Join(addresses, ", "))
 }

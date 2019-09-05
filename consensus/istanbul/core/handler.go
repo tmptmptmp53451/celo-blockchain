@@ -152,20 +152,7 @@ func (c *core) handleMsg(payload []byte) error {
 }
 
 func (c *core) handleCheckedMsg(msg *istanbul.Message, src istanbul.Validator) error {
-	var msgType string
-	switch msg.Code {
-	case msgPreprepare:
-		msgType = "msgPreprepare"
-	case msgPrepare:
-		msgType = "msgPrepare"
-	case msgCommit:
-		msgType = "msgCommit"
-	case msgRoundChange:
-		msgType = "msgRoundChange"
-	default:
-		msgType = "msgUnknown"
-	}
-	logger := c.logger.New("address", c.address, "from", src, "func", "handleCheckedMsg", "msgType", msgType)
+	logger := c.logger.New("address", c.address, "from", src, "func", "handleCheckedMsg", "msgCode", msg.Code)
 	logger.Info("Handling checked message", "msg", msg)
 
 	// Store the message if it's a future message
@@ -203,7 +190,7 @@ func (c *core) handleTimeoutMsg() {
 	// if the max round is larger than current round.
 	if !c.waitingForRoundChange {
 		maxRound := c.roundChangeSet.MaxRound(c.valSet.F() + 1)
-		logger.Trace("round change timeout", "cur_round", c.current.Round(), "maxRound", maxRound, "rcsp", &c.roundChangeSet, "rcs", c.roundChangeSet.String(), "cur_seq", c.current.Sequence())
+		logger.Trace("round change timeout", "cur_round", c.current.Round(), "maxRound", maxRound, "rcsp", &c.roundChangeSet, "cur_seq", c.current.Sequence())
 		if maxRound != nil && maxRound.Cmp(c.current.Round()) > 0 {
 			c.sendRoundChange(maxRound)
 			return
