@@ -163,6 +163,9 @@ type Block struct {
 	uncles       []*Header
 	transactions Transactions
 	randomness   *Randomness
+	// Aggregated signature of all signatures the block proposer saw for the
+	// previous block.
+	parentSeal *BlockSeal
 
 	// caches
 	hash atomic.Value
@@ -176,6 +179,13 @@ type Block struct {
 	// inter-peer block relay.
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
+}
+
+type BlockSeal struct {
+	// An aggregated signature of the block
+	Seal []byte
+	// Bitmap indicating which validators' signatures are aggregated into the seal.
+	Bitmap *big.Int
 }
 
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
@@ -197,6 +207,7 @@ type extblock struct {
 	Txs        []*Transaction
 	Uncles     []*Header
 	Randomness *Randomness
+	ParentSeal *BlockSeal
 }
 
 // [deprecated by eth/63]
@@ -286,7 +297,7 @@ func (b *Block) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	b.header, b.uncles, b.transactions, b.randomness = eb.Header, eb.Uncles, eb.Txs, eb.Randomness
+	b.header, b.uncles, b.transactions, b.randomness, b.parentSeal = eb.Header, eb.Uncles, eb.Txs, eb.Randomness, eb.ParentSeal
 	b.size.Store(common.StorageSize(rlp.ListSize(size)))
 	return nil
 }
@@ -298,6 +309,7 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 		Txs:        b.transactions,
 		Uncles:     b.uncles,
 		Randomness: b.randomness,
+		ParentSeal: b.parentSeal,
 	})
 }
 
