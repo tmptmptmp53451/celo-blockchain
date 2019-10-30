@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/clique"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -660,6 +661,11 @@ var (
 		Usage: "Default minimum difference between two consecutive block's timestamps in seconds",
 		Value: eth.DefaultConfig.Istanbul.BlockPeriod,
 	}
+	IstanbulProposerPolicyFlag = cli.Uint64Flag{
+		Name:  "istanbul.proposerpolicy",
+		Usage: "Default minimum difference between two consecutive block's timestamps in seconds",
+		Value: uint64(eth.DefaultConfig.Istanbul.ProposerPolicy),
+	}
 	IstanbulFaultyModeFlag = cli.Uint64Flag{
 		Name:  "istanbul.faultymode",
 		Usage: "0: not faulty, 1: inject random faults, 2+ specific faults (see code)",
@@ -1170,6 +1176,9 @@ func setIstanbul(ctx *cli.Context, cfg *eth.Config) {
 	}
 	if ctx.GlobalIsSet(IstanbulBlockPeriodFlag.Name) {
 		cfg.Istanbul.BlockPeriod = ctx.GlobalUint64(IstanbulBlockPeriodFlag.Name)
+	}
+	if ctx.GlobalIsSet(IstanbulProposerPolicyFlag.Name) {
+		cfg.Istanbul.ProposerPolicy = istanbul.ProposerPolicy(ctx.GlobalUint64(IstanbulProposerPolicyFlag.Name))
 	}
 	if ctx.GlobalIsSet(IstanbulFaultyModeFlag.Name) {
 		cfg.Istanbul.FaultyMode = ctx.GlobalUint64(IstanbulFaultyModeFlag.Name)
