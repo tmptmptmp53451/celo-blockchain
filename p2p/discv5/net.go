@@ -455,6 +455,7 @@ loop:
 		case q := <-net.queryReq:
 			log.Trace("<-net.queryReq")
 			if !q.start(net) {
+				log.Trace("tbone net.queryReq deferQuery")
 				q.remote.deferQuery(q)
 			}
 
@@ -493,7 +494,11 @@ loop:
 				return n.pingEcho
 			})
 			target, delay := net.ticketStore.nextRegisterLookup()
+			log.Trace("tbone nextRegisterLookup", "target", target, "delay", delay)
 			topicRegisterLookupTarget = target
+			if !topicRegisterLookupTick.Stop() {
+				<-topicRegisterLookupTick.C
+			}
 			topicRegisterLookupTick.Reset(delay)
 			topicRegisterLookupDone = nil
 
@@ -507,6 +512,7 @@ loop:
 			} else {
 				topicRegisterLookupDone = make(chan []*Node)
 				target := topicRegisterLookupTarget.target
+				log.Trace("tbone topicRegisterLookupTick.C go func", "topicRegisterLookupTarget", topicRegisterLookupTarget)
 				go func() { topicRegisterLookupDone <- net.lookup(target, false) }()
 			}
 
@@ -802,18 +808,21 @@ func (q *findnodeQuery) start(net *Network) bool {
 	if q.remote == net.tab.self {
 		closest := net.tab.closest(q.target, bucketSize)
 		q.reply <- closest.entries
+		log.Trace("tbone findnodeQuery.start self")
 		return true
 	}
 	if q.remote.state.canQuery && q.remote.pendingNeighbours == nil {
 		net.conn.sendFindnodeHash(q.remote, q.target)
 		net.timedEvent(respTimeout, q.remote, neighboursTimeout)
 		q.remote.pendingNeighbours = q
+		log.Trace("tbone findnodeQuery.start queried neighbor")
 		return true
 	}
 	// If the node is not known yet, it won't accept queries.
 	// Initiate the transition to known.
 	// The request will be sent later when the node reaches known state.
 	if q.remote.state == unknown {
+		log.Trace("tbone findnodeQuery.start state unknown")
 		net.transition(q.remote, verifyinit)
 	}
 	return false
