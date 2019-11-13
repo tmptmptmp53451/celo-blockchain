@@ -88,6 +88,7 @@ func (c *core) verifyPreparedCertificate(preparedCertificate istanbul.PreparedCe
 		}
 
 		// Verify message for the proper sequence.
+		// REVIEW: Check for internal consistency of view that every prepare in certificate has the same round.
 		if subject.View.Sequence.Cmp(c.currentView().Sequence) != 0 {
 			return errInvalidPreparedCertificateMsgView
 		}

@@ -178,6 +178,7 @@ func (c *core) handleCheckedMsg(msg *istanbul.Message, src istanbul.Validator) e
 	}
 
 	// Store the message if it's a future message
+	// REVIEW: Is there a better name for this function?
 	testBacklog := func(err error) error {
 		if err == errFutureMessage {
 			c.storeBacklog(msg, src)

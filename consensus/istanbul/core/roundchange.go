@@ -272,6 +272,7 @@ func (rcs *roundChangeSet) Clear(round *big.Int) {
 }
 
 // MaxRound returns the max round which the number of messages is equal or larger than num
+// REVIEW: Change to NthHighestRoundChangeRound
 func (rcs *roundChangeSet) MaxRound(num int) *big.Int {
 	rcs.mu.Lock()
 	defer rcs.mu.Unlock()
@@ -296,6 +297,7 @@ func (rcs *roundChangeSet) MaxRound(num int) *big.Int {
 }
 
 // MaxOnOneRound returns the max round which the number of messages is >= num
+// REVIEW: Change name to HighestRoundWithNRoundChangeMessages
 func (rcs *roundChangeSet) MaxOnOneRound(num int) *big.Int {
 	rcs.mu.Lock()
 	defer rcs.mu.Unlock()

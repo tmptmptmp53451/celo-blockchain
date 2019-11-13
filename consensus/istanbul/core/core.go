@@ -174,6 +174,7 @@ func (c *core) commit() {
 	c.setState(StateCommitted)
 
 	proposal := c.current.Proposal()
+	// REVIEW: Is it safe to do nothing on proposal nil.
 	if proposal != nil {
 		bitmap, asig := AggregateSeals(c.current.Commits)
 		if err := c.backend.Commit(proposal, bitmap, asig); err != nil {
@@ -272,6 +273,7 @@ func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbu
 }
 
 // startNewRound starts a new round. if round equals to 0, it means to starts a new sequence
+// Note: Round number argument is ignored in the case of a sequence change.
 func (c *core) startNewRound(round *big.Int) {
 	var logger log.Logger
 	if c.current == nil {
@@ -355,6 +357,7 @@ func (c *core) startNewRound(round *big.Int) {
 }
 
 // All actions that occur when transitioning to waiting for round change state.
+// REVIEW: Change this to `waitForDesiredView` to wait for a new round and sequence, which any sequence change causing us to continue.
 func (c *core) waitForDesiredRound(r *big.Int) {
 	logger := c.logger.New("func", "waitForDesiredRound", "cur_round", c.current.Round(), "old_desired_round", c.current.DesiredRound(), "new_desired_round", r)
 	// Don't wait for an older round

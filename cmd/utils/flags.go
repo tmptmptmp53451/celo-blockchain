@@ -343,6 +343,7 @@ var (
 		Name:  "mine",
 		Usage: "Enable mining",
 	}
+	// REVIEW: Remove this flag as it should only be used by ethhash.
 	MinerThreadsFlag = cli.IntFlag{
 		Name:  "miner.threads",
 		Usage: "Number of CPU threads to use for mining",

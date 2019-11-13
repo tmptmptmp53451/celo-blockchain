@@ -639,6 +639,7 @@ func (sb *Backend) Stop() error {
 	}
 	sb.coreStarted = false
 
+	// REVIEW: Here we should close the `announceQuit` channel instead of sending to it.
 	sb.announceQuit <- struct{}{}
 	sb.announceWg.Wait()
 	return nil
@@ -650,6 +651,8 @@ func (sb *Backend) Stop() error {
 // hash - The requested snapshot's block's hash
 // number - The requested snapshot's block number
 // parents - (Optional argument) An array of headers from directly previous blocks.
+// REVIEW: We may want to get the block number from the hash instead of having it passed in.
+// REVIEW: Rename this to validatorSetSnapshot.
 func (sb *Backend) snapshot(chain consensus.ChainReader, number uint64, hash common.Hash, parents []*types.Header) (*Snapshot, error) {
 	// Search for a snapshot in memory or on disk
 	var (
@@ -683,6 +686,7 @@ func (sb *Backend) snapshot(chain consensus.ChainReader, number uint64, hash com
 		if numberIter == number {
 			blockHash = hash
 		} else {
+			// REVIEW: Is it always safe to call this GetHeaderByNumber?
 			header = chain.GetHeaderByNumber(numberIter)
 			if header == nil {
 				log.Trace("Unable to find header in chain", "number", number)
