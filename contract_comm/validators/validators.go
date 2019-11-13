@@ -135,7 +135,7 @@ type ValidatorContractData struct {
 
 var validatorsABI, _ = abi.JSON(strings.NewReader(validatorsABIString))
 
-func RetrieveRegisteredValidators(header *types.Header, state vm.StateDB) ([]common.Address, error) {
+func RetrieveRegisteredValidators(header *types.Header, state vm.StateDB) (map[common.Address]bool, error) {
 	var regVals []common.Address
 
 	// Get the new epoch's validator set
@@ -143,7 +143,13 @@ func RetrieveRegisteredValidators(header *types.Header, state vm.StateDB) ([]com
 		return nil, err
 	}
 
-	return regVals, nil
+	returnMap := make(map[common.Address]bool)
+
+	for _, address := range regVals {
+		returnMap[address] = true
+	}
+
+	return returnMap, nil
 }
 
 func GetValidator(header *types.Header, state vm.StateDB, validatorAddress common.Address) (ValidatorContractData, error) {

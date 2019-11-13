@@ -2,14 +2,12 @@ package backend
 
 import (
 	"crypto/ecdsa"
-	"math/big"
 	"net"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 )
@@ -46,25 +44,18 @@ func (mb *MockBroadcaster) GetValidatorPeers() []string {
 	return nil
 }
 
-func view(sequence, round int64) *istanbul.View {
-	return &istanbul.View{
-		Sequence: big.NewInt(sequence),
-		Round:    big.NewInt(round),
-	}
-}
 func TestHandleIstAnnounce(t *testing.T) {
 	_, b := newBlockChain(4, true)
 	for b == nil || b.Address() == getAddress() {
 		_, b = newBlockChain(4, true)
 	}
 
-	enodeURL := b.Enode().String()
+	enodeUrl := b.Enode().String()
 	validatorAddr := b.Address()
 
 	privateKey, _ := generatePrivateKey()
 	broadcaster := &MockBroadcaster{privateKey: privateKey}
-
-	b.valEnodeTable.Upsert(getAddress(), broadcaster.GetLocalNode().String(), view(0, 1))
+	b.valEnodeTable.valEnodeTable[getAddress()] = &validatorEnode{enodeURL: broadcaster.GetLocalNode().String()}
 
 	payload, err := b.generateIstAnnounce()
 
@@ -76,15 +67,14 @@ func TestHandleIstAnnounce(t *testing.T) {
 		t.Errorf("error %v", err)
 	}
 
-	if url, ok := b.valEnodeTable.GetEnodeURLFromAddress(validatorAddr); ok {
-		if url != enodeURL[:strings.Index(enodeURL, "@")] {
-			t.Errorf("Expected %v, got %v instead", enodeURL[:strings.Index(enodeURL, "@")], url)
+	if b.valEnodeTable.valEnodeTable[validatorAddr] != nil {
+		if b.valEnodeTable.valEnodeTable[validatorAddr].enodeURL != enodeUrl[:strings.Index(enodeUrl, "@")] {
+			t.Errorf("Expected %v, got %v instead", enodeUrl[:strings.Index(enodeUrl, "@")], b.valEnodeTable.valEnodeTable[validatorAddr])
 		}
 	} else {
 		t.Errorf("Failed to save enode entry")
 	}
-
-	b.valEnodeTable.RemoveEntry(validatorAddr)
+	delete(b.valEnodeTable.valEnodeTable, validatorAddr)
 
 	b.Authorize(getAddress(), signerFn, signerBLSHashFn, signerBLSMessageFn)
 	b.SetBroadcaster(broadcaster)
@@ -93,9 +83,9 @@ func TestHandleIstAnnounce(t *testing.T) {
 		t.Errorf("error %v", err)
 	}
 
-	if url, ok := b.valEnodeTable.GetEnodeURLFromAddress(validatorAddr); ok {
-		if url != enodeURL {
-			t.Errorf("Expected %v, but got %v instead", enodeURL, url)
+	if b.valEnodeTable.valEnodeTable[validatorAddr] != nil {
+		if b.valEnodeTable.valEnodeTable[validatorAddr].enodeURL != enodeUrl {
+			t.Errorf("Expected %v, but got %v instead", enodeUrl, b.valEnodeTable.valEnodeTable[validatorAddr].enodeURL)
 		}
 	} else {
 		t.Errorf("Failed to save enode entry")
