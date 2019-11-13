@@ -682,7 +682,7 @@ func (s *Service) assembleValidatorSet(block *types.Block, state vm.StateDB) val
 	valsRegisteredMap, _ := validators.RetrieveRegisteredValidators(nil, nil)
 	valsRegistered = make([]validatorInfo, 0, len(valsRegisteredMap))
 
-	for _, address := range valsRegisteredMap {
+	for address := range valsRegisteredMap {
 		var valData validators.ValidatorContractData
 		valData, _ = validators.GetValidator(
 			s.eth.BlockChain().CurrentHeader(),
