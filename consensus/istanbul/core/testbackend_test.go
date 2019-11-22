@@ -153,17 +153,7 @@ func (self *testSystemBackend) NewRequest(request istanbul.Proposal) {
 	})
 }
 
-func (self *testSystemBackend) GetCurrentHeadBlock() istanbul.Proposal {
-	l := len(self.committedMsgs)
-	if l > 0 {
-		testLogger.Info("have proposal for block", "num", l)
-		return self.committedMsgs[l-1].commitProposal
-	}
-	testLogger.Info("do not have proposal for block", "num", 0)
-	return makeBlock(0)
-}
-
-func (self *testSystemBackend) GetCurrentHeadBlockAndAuthor() (istanbul.Proposal, common.Address) {
+func (self *testSystemBackend) LastProposal() (istanbul.Proposal, common.Address) {
 	l := len(self.committedMsgs)
 	if l > 0 {
 		testLogger.Info("have proposal for block", "num", l)
@@ -174,21 +164,21 @@ func (self *testSystemBackend) GetCurrentHeadBlockAndAuthor() (istanbul.Proposal
 }
 
 func (self *testSystemBackend) LastSubject() (istanbul.Subject, error) {
-	lastProposal := self.GetCurrentHeadBlock()
+	lastProposal, _ := self.LastProposal()
 	lastView := &istanbul.View{Sequence: lastProposal.Number(), Round: big.NewInt(1)}
 	return istanbul.Subject{View: lastView, Digest: lastProposal.Hash()}, nil
 }
 
 // Only block height 5 will return true
-func (self *testSystemBackend) HasBlock(hash common.Hash, number *big.Int) bool {
+func (self *testSystemBackend) HasProposal(hash common.Hash, number *big.Int) bool {
 	return number.Cmp(big.NewInt(5)) == 0
 }
 
-func (self *testSystemBackend) AuthorForBlock(number uint64) common.Address {
+func (self *testSystemBackend) GetProposer(number uint64) common.Address {
 	return common.Address{}
 }
 
-func (self *testSystemBackend) ParentBlockValidators(proposal istanbul.Proposal) istanbul.ValidatorSet {
+func (self *testSystemBackend) ParentValidators(proposal istanbul.Proposal) istanbul.ValidatorSet {
 	return self.peers
 }
 

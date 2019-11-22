@@ -215,11 +215,6 @@ func (sb *Backend) Validators(proposal istanbul.Proposal) istanbul.ValidatorSet 
 	return sb.getOrderedValidators(proposal.Number().Uint64(), proposal.Hash())
 }
 
-// ParentBlockValidators implements istanbul.Backend.GetParentValidators
-func (sb *Backend) ParentBlockValidators(proposal istanbul.Proposal) istanbul.ValidatorSet {
-	return sb.getOrderedValidators(proposal.Number().Uint64()-1, proposal.ParentHash())
-}
-
 func (sb *Backend) GetValidators(blockNumber *big.Int, headerHash common.Hash) []istanbul.Validator {
 	validatorSet := sb.getValidators(blockNumber.Uint64(), headerHash)
 	return validatorSet.List()
@@ -476,7 +471,7 @@ func (sb *Backend) verifyValSetDiff(proposal istanbul.Proposal, block *types.Blo
 			return errInvalidValidatorSetDiff
 		}
 	} else {
-		parentValidators := sb.ParentBlockValidators(proposal)
+		parentValidators := sb.ParentValidators(proposal)
 		oldValSet := make([]istanbul.ValidatorData, 0, parentValidators.Size())
 
 		for _, val := range parentValidators.List() {
@@ -538,18 +533,26 @@ func (sb *Backend) CheckSignature(data []byte, address common.Address, sig []byt
 	return nil
 }
 
-// HasBlock implements istanbul.Backend.HasBlock
-func (sb *Backend) HasBlock(hash common.Hash, number *big.Int) bool {
+// HasProposal implements istanbul.Backend.HasProposal
+func (sb *Backend) HasProposal(hash common.Hash, number *big.Int) bool {
 	return sb.chain.GetHeader(hash, number.Uint64()) != nil
 }
 
-// AuthorForBlock implements istanbul.Backend.AuthorForBlock
-func (sb *Backend) AuthorForBlock(number uint64) common.Address {
+// GetProposer implements istanbul.Backend.GetProposer
+func (sb *Backend) GetProposer(number uint64) common.Address {
 	if h := sb.chain.GetHeaderByNumber(number); h != nil {
 		a, _ := sb.Author(h)
 		return a
 	}
-	return common.ZeroAddress
+	return common.Address{}
+}
+
+// ParentValidators implements istanbul.Backend.GetParentValidators
+func (sb *Backend) ParentValidators(proposal istanbul.Proposal) istanbul.ValidatorSet {
+	if block, ok := proposal.(*types.Block); ok {
+		return sb.getOrderedValidators(block.Number().Uint64()-1, block.ParentHash())
+	}
+	return validator.NewSet(nil, sb.config.ProposerPolicy)
 }
 
 func (sb *Backend) getValidators(number uint64, hash common.Hash) istanbul.ValidatorSet {
@@ -595,24 +598,17 @@ func (sb *Backend) getOrderedValidators(number uint64, hash common.Hash) istanbu
 	return valSet
 }
 
-// GetCurrentHeadBlock retrieves the last block
-func (sb *Backend) GetCurrentHeadBlock() istanbul.Proposal {
-	return sb.currentBlock()
-}
-
-// GetCurrentHeadBlockAndAuthor retrieves the last block alongside the coinbase address for it
-func (sb *Backend) GetCurrentHeadBlockAndAuthor() (istanbul.Proposal, common.Address) {
+func (sb *Backend) LastProposal() (istanbul.Proposal, common.Address) {
 	block := sb.currentBlock()
 
-	if block.Number().Cmp(common.Big0) == 0 {
-		return block, common.ZeroAddress
-	}
-
-	proposer, err := sb.Author(block.Header())
-
-	if err != nil {
-		sb.logger.Error("Failed to get block proposer", "err", err)
-		return nil, common.ZeroAddress
+	var proposer common.Address
+	if block.Number().Cmp(common.Big0) > 0 {
+		var err error
+		proposer, err = sb.Author(block.Header())
+		if err != nil {
+			sb.logger.Error("Failed to get block proposer", "err", err)
+			return nil, common.Address{}
+		}
 	}
 
 	// Return header only block here since we don't need block body
@@ -620,7 +616,7 @@ func (sb *Backend) GetCurrentHeadBlockAndAuthor() (istanbul.Proposal, common.Add
 }
 
 func (sb *Backend) LastSubject() (istanbul.Subject, error) {
-	lastProposal, _ := sb.GetCurrentHeadBlockAndAuthor()
+	lastProposal, _ := sb.LastProposal()
 	istExtra, err := types.ExtractIstanbulExtra(lastProposal.Header())
 	if err != nil {
 		return istanbul.Subject{}, err
