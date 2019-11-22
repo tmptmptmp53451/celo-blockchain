@@ -475,26 +475,36 @@ func (sb *Backend) LookbackWindow() uint64 {
 // Note, the block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
 func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt, randomness *types.Randomness) (*types.Block, error) {
+	sb.logger.Trace("Finalizing", "block", header.Number.Uint64(), "epochSize", sb.config.Epoch)
+	sb.logger.Info("Baklava - root at the start of finalization", "root", state.IntermediateRoot(chain.Config().IsEIP158(header.Number)))
 
 	snapshot := state.Snapshot()
 	err := sb.setInitialGoldTokenTotalSupplyIfUnset(header, state)
 	if err != nil {
+		sb.logger.Error("Baklava - reverting to snapshot after setting initial goldtoken total supply")
 		state.RevertToSnapshot(snapshot)
+	} else {
+		sb.logger.Info("Baklava - root after setting initial goldtoken total supply", "root", state.IntermediateRoot(chain.Config().IsEIP158(header.Number)))
 	}
 
 	// Trigger an update to the gas price minimum in the GasPriceMinimum contract based on block congestion
 	snapshot = state.Snapshot()
 	_, err = gpm.UpdateGasPriceMinimum(header, state)
 	if err != nil {
+		sb.logger.Error("Baklava - reverting to snapshot after updating gas price minimum")
 		state.RevertToSnapshot(snapshot)
+	} else {
+		sb.logger.Info("Baklava - root after updating gas price minimum", "root", state.IntermediateRoot(chain.Config().IsEIP158(header.Number)))
 	}
 
-	sb.logger.Trace("Finalizing", "block", header.Number.Uint64(), "epochSize", sb.config.Epoch)
 	if istanbul.IsLastBlockOfEpoch(header.Number.Uint64(), sb.config.Epoch) {
 		snapshot = state.Snapshot()
 		err = sb.distributeEpochPaymentsAndRewards(header, state)
 		if err != nil {
+			sb.logger.Error("Baklava - reverting to snapshot after distributing epoch rewards")
 			state.RevertToSnapshot(snapshot)
+		} else {
+			sb.logger.Info("Baklava - root after distributing epoch rewards", "root", state.IntermediateRoot(chain.Config().IsEIP158(header.Number)))
 		}
 	}
 
