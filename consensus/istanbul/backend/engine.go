@@ -407,7 +407,7 @@ func (sb *Backend) Prepare(chain consensus.ChainReader, header *types.Header) er
 
 		additionalParentSeals := sb.core.ParentCommits()
 		if additionalParentSeals != nil && additionalParentSeals.Size() != 0 {
-			logger.Trace("Combining additional seals with the parent aggregated seal", "additionalSeals", additionalParentSeals.String(), "num", number, "parentAggregatedSeal", parentAggregatedSeal.String())
+			logger.Info("Combining additional seals with the parent aggregated seal", "additionalSeals", additionalParentSeals.String(), "num", number, "parentAggregatedSeal", parentAggregatedSeal.String())
 			// if we had any seals gossiped to us, proceed to add them to the
 			// already aggregated signature
 			if unionAggregatedSeal, err := istanbulCore.UnionOfSeals(parentExtra.AggregatedSeal, additionalParentSeals); err != nil {
@@ -421,7 +421,7 @@ func (sb *Backend) Prepare(chain consensus.ChainReader, header *types.Header) er
 					logger.Error("Failed to combine additional seals with parent aggregated seal.", "err", err)
 				} else {
 					parentAggregatedSeal = unionAggregatedSeal
-					logger.Debug("Succeeded in combining additional seals with parent aggregated seal", "combinedAggregatedSeal", parentAggregatedSeal.String())
+					logger.Info("Succeeded in combining additional seals with parent aggregated seal", "combinedAggregatedSeal", parentAggregatedSeal.String())
 				}
 			}
 		} else {
