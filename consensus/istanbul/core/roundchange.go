@@ -109,9 +109,11 @@ func (c *core) handleRoundChangeCertificate(proposal istanbul.Subject, roundChan
 			logger.Error("Failed to decode ROUND CHANGE in certificate", "err", err)
 			return err
 		}
+		logger.Info("Decoded round change message in certificate")
 
 		// Verify ROUND CHANGE message is for a proper view
 		if roundChange.View.Cmp(proposal.View) != 0 || roundChange.View.Round.Cmp(c.current.DesiredRound()) < 0 {
+			logger.Info("Invalid view for Preprepare with roundchange", "roundchangeview", roundChange.View.String(), "proposalView", proposal.View.String(), "desiredRound", c.current.DesiredRound())
 			return errInvalidRoundChangeCertificateMsgView
 		}
 
