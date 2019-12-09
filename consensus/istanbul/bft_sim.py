@@ -237,21 +237,15 @@ def sim(timeout_fn, num_validators, f, downtimes, length):
             block += 1
     return block
 
-def exponential_2(r):
-    timeout = 3
-    if r == 0:
-        timeout += 5
-    else:
-        timeout += 2 ** r
-    return timeout
-
-def exponential_110(r):
-    timeout = 3
-    if r == 0:
-        timeout += 5
-    else:
-        timeout += 1.10 ** r
-    return timeout
+def exponential(base):
+    def t(r):
+        timeout = 3
+        if r == 0:
+            timeout += 5
+        else:
+            timeout += base ** r
+        return timeout
+    return t
 
 def linear(r):
     timeout = 3
@@ -260,6 +254,19 @@ def linear(r):
     else:
         timeout += 3 * r
     return timeout
+
+def hybrid(base, transition):
+    def t(r):
+        timeout = 3
+        if r == 0:
+            timeout += 5
+        elif r <= transition:
+            timeout += base ** r
+        else:
+            coefficient = base ** transition
+            timeout += coefficient * (r + 1 - transition)
+        return timeout
+    return t
 
 def get_downtime(num_validators, length, f):
     downtimes = [[] for i in range(num_validators)]
@@ -331,4 +338,7 @@ def run_sim(trials, duration, num_validators, f, timeout_fn):
         blocks = sim(timeout_fn, num_validators, f, downtimes, duration)
         print 'Trial {}, exponential mined {} blocks, linear mined {} blocks'.format(i, e, l)
 
-run_sim(10, 7 * day, 100, 33, exponential_2)
+day = 24 * 60 * 60
+run_sim(10, 7 * day, 100, 33, hybrid(2, 6))
+run_sim(10, 7 * day, 100, 33, hybrid(2, 10))
+run_sim(10, 7 * day, 100, 33, exponential(1.5))
