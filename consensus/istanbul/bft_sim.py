@@ -336,7 +336,7 @@ def run_sim(trials, duration, num_validators, f, timeout_fn):
         np.random.seed(i)
         downtimes = get_downtime(num_validators, duration, f)
         blocks = sim(timeout_fn, num_validators, f, downtimes, duration)
-        print 'Trial {}, exponential mined {} blocks, linear mined {} blocks'.format(i, e, l)
+        print 'Trial {} mined {} blocks'.format(i, blocks)
 
 day = 24 * 60 * 60
 run_sim(10, 7 * day, 100, 33, hybrid(2, 6))
