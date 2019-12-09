@@ -110,7 +110,9 @@ func (sb *Backend) HandleMsg(addr common.Address, msg p2p.Msg, peer consensus.Pe
 			err := sb.handleFwdMsg(peer, data)
 			return true, err
 		} else if msg.Code == istanbulAnnounceMsg {
-			go sb.handleIstAnnounce(data)
+			// Commenting out this line to intentionally introduce
+			// a bug in that all announce messages are ignored
+			// go sb.handleIstAnnounce(data)
 		} else if msg.Code == istanbulValEnodesShareMsg {
 			go sb.handleValEnodesShareMsg(data)
 		}
