@@ -111,7 +111,7 @@ class Validator:
             self.sent_preprepare_for_round[self.cur_round] = True
             return Message(PREPREPARE, self.cur_round, self.index, range(self.num_validators))
         else:
-            raise Exception('Invlid event')
+            raise Exception('Invalid event')
 
     def go_down(self):
         self.cur_round = 0
@@ -312,34 +312,23 @@ def get_downtime(num_validators, length, f):
                     merged_downtimes[i].append(downtime)
     return merged_downtimes
 
-num_validators = 100
-f = 33
-length = 7 * 24 * 60 * 60
-trials = 10
-
-"""
-for j in range(10):
-    print "Trial", j
-    np.random.seed(j)
-    _downtimes = get_downtime(num_validators, length, f)
-    downtimes = [Downtime(d) for d in _downtimes]
+def print_downtimes(downtimes, threshold):
     log_info = (0, 0, 0)
     for i in range(length):
         is_down = [d.is_down(i) for d in downtimes]
         num_down = sum(is_down)
         if num_down != log_info[0]:
-            if log_info[0] > f:
+            if log_info[0] > threshold:
                 print '{} down validators from {} to {}'.format(log_info[0], log_info[1], log_info[2])
             log_info = (num_down, i, i)
         else:
             log_info = (log_info[0], log_info[1], i)
-"""
 
-for i in range(trials):
-    np.random.seed(i)
-    downtimes = get_downtime(num_validators, length, f)
-    e = sim(exponential_2, num_validators, f, downtimes, length)
-    l = sim(linear, num_validators, f, downtimes, length)
-    print 'Trial {}, exponential mined {} blocks, linear mined {} blocks'.format(i, e, l)
+def run_sim(trials, duration, num_validators, f, timeout_fn):
+    for i in range(trials):
+        np.random.seed(i)
+        downtimes = get_downtime(num_validators, duration, f)
+        blocks = sim(timeout_fn, num_validators, f, downtimes, duration)
+        print 'Trial {}, exponential mined {} blocks, linear mined {} blocks'.format(i, e, l)
 
-#sim(exponential, 4, 1, [[[0, 60 * 60]], [[0, 60 * 60]], [[0, 100 * 60 * 60]], []], 7754)
+run_sim(10, 7 * day, 100, 33, exponential_2)
