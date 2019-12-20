@@ -181,13 +181,13 @@ func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 
 	payload, err := c.finalizeMessage(msg)
 	if err != nil {
-		logger.Error("Failed to finalize message", "msg", msg, "err", err)
+		logger.Error("Failed to finalize message", "m", msg, "err", err)
 		return
 	}
 
 	// Send payload to the specified addresses
 	if err := c.backend.BroadcastConsensusMsg(addresses, payload); err != nil {
-		logger.Error("Failed to send message", "msg", msg, "err", err)
+		logger.Error("Failed to send message", "m", msg, "err", err)
 		return
 	}
 
@@ -300,6 +300,8 @@ func UnionOfSeals(aggregatedSignature types.IstanbulAggregatedSeal, seals Messag
 
 // Generates the next preprepare request and associated round change certificate
 func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbul.Request, istanbul.RoundChangeCertificate, error) {
+	logger := c.newLogger("func", "getPreprepareWithRoundChangeCertificate", "for_round", round)
+
 	roundChangeCertificate, err := c.roundChangeSet.getCertificate(round, c.current.ValidatorSet().MinQuorumSize())
 	if err != nil {
 		return &istanbul.Request{}, istanbul.RoundChangeCertificate{}, err
@@ -313,10 +315,21 @@ func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbu
 	for _, message := range roundChangeCertificate.RoundChangeMessages {
 		var roundChangeMsg *istanbul.RoundChange
 		if err := message.Decode(&roundChangeMsg); err != nil {
+			logger.Error("Unexpected: could not decode a previously received RoundChange message")
+			return &istanbul.Request{}, istanbul.RoundChangeCertificate{}, err
+		}
+
+		if !roundChangeMsg.HasPreparedCertificate() {
 			continue
 		}
-		preparedCertificateView := roundChangeMsg.PreparedCertificate.View()
-		if roundChangeMsg.HasPreparedCertificate() && preparedCertificateView != nil && preparedCertificateView.Round.Cmp(maxRound) > 0 {
+
+		preparedCertificateView, err := c.verifyPreparedCertificate(roundChangeMsg.PreparedCertificate)
+		if err != nil {
+			logger.Error("Unexpected: could not verify a previously received PreparedCertificate message", "src_m", message)
+			return &istanbul.Request{}, istanbul.RoundChangeCertificate{}, err
+		}
+
+		if preparedCertificateView != nil && preparedCertificateView.Round.Cmp(maxRound) > 0 {
 			maxRound = preparedCertificateView.Round
 			request = &istanbul.Request{
 				Proposal: roundChangeMsg.PreparedCertificate.Proposal,
@@ -552,7 +565,7 @@ func (c *core) newRoundChangeTimerForView(view *istanbul.View) {
 	}
 
 	c.roundChangeTimer = time.AfterFunc(timeout, func() {
-		c.sendEvent(timeoutEvent{view})
+		c.sendEvent(timeoutEvent{&istanbul.View{Sequence: view.Sequence, Round: view.Round}})
 	})
 }
 

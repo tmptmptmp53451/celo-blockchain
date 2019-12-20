@@ -47,20 +47,32 @@ func (c *core) sendPreprepare(request *istanbul.Request, roundChangeCertificate 
 			Code: istanbul.MsgPreprepare,
 			Msg:  preprepare,
 		}
-		logger.Debug("Sending pre-prepare", "msg", msg)
+		logger.Debug("Sending pre-prepare", "m", msg)
 		c.broadcast(msg)
 	}
 }
 
 func (c *core) handlePreprepare(msg *istanbul.Message) error {
 	logger := c.newLogger("func", "handlePreprepare", "tag", "handleMsg", "from", msg.Address)
-	logger.Trace("Got pre-prepare message", "msg", msg)
+	logger.Trace("Got pre-prepare message", "m", msg)
 
 	// Decode PRE-PREPARE
 	var preprepare *istanbul.Preprepare
 	err := msg.Decode(&preprepare)
 	if err != nil {
 		return errFailedDecodePreprepare
+	}
+
+	// Check if the message comes from current proposer
+	if !c.current.IsProposer(msg.Address) {
+		logger.Warn("Ignore preprepare messages from non-proposer")
+		return errNotFromProposer
+	}
+
+	// Verify that the proposal is for the sequence number of the view we verified.
+	if preprepare.View.Sequence.Cmp(preprepare.Proposal.Number()) != 0 {
+		logger.Warn("Received preprepare with invalid block number", "number", preprepare.Proposal.Number(), "view_seq", preprepare.View.Sequence)
+		return errInvalidProposal
 	}
 
 	// If round > 0, handle the ROUND CHANGE certificate. If round = 0, it should not have a ROUND CHANGE certificate
@@ -105,18 +117,6 @@ func (c *core) handlePreprepare(msg *istanbul.Message) error {
 		// Probably shouldn't errFutureMessage as we should have moved to that round in handleRoundChangeCertificate
 		logger.Trace("Check pre-prepare failed", "cur_round", c.current.Round(), "err", err)
 		return err
-	}
-
-	// Check if the message comes from current proposer
-	if !c.current.IsProposer(msg.Address) {
-		logger.Warn("Ignore preprepare messages from non-proposer")
-		return errNotFromProposer
-	}
-
-	// Verify that the proposal is for the sequence number of the view we verified.
-	if preprepare.View.Sequence.Cmp(preprepare.Proposal.Number()) != 0 {
-		logger.Warn("Received preprepare with invalid block number", "number", preprepare.Proposal.Number(), "view_seq", preprepare.View.Sequence)
-		return errInvalidProposal
 	}
 
 	// Verify the proposal we received
