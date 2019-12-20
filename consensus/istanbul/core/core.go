@@ -164,6 +164,7 @@ func (c *core) unicast(msg *istanbul.Message, addr common.Address) {
 
 func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 	logger := c.newLogger("func", "sendMsgTo")
+<<<<<<< HEAD
 
 	if c.notBroadcast() {
 		logger.Info("Not broadcast message", "message", msg)
@@ -175,6 +176,8 @@ func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 		logger.Info("Modify the message code", "old", msg.Code, "new", code)
 		msg.Code = code
 	}
+=======
+>>>>>>> master
 
 	payload, err := c.finalizeMessage(msg)
 	if err != nil {
@@ -413,7 +416,7 @@ func (c *core) waitForDesiredRound(r *big.Int) error {
 
 	// Don't wait for an older round
 	if c.current.DesiredRound().Cmp(r) >= 0 {
-		logger.Debug("New desired round not greater than current desired round")
+		logger.Trace("New desired round not greater than current desired round")
 		return nil
 	}
 
