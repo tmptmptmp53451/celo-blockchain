@@ -164,7 +164,6 @@ func (c *core) unicast(msg *istanbul.Message, addr common.Address) {
 
 func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 	logger := c.newLogger("func", "sendMsgTo")
-<<<<<<< HEAD
 
 	if c.notBroadcast() {
 		logger.Info("Not broadcast message", "message", msg)
@@ -176,8 +175,6 @@ func (c *core) sendMsgTo(msg *istanbul.Message, addresses []common.Address) {
 		logger.Info("Modify the message code", "old", msg.Code, "new", code)
 		msg.Code = code
 	}
-=======
->>>>>>> master
 
 	payload, err := c.finalizeMessage(msg)
 	if err != nil {
