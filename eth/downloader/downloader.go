@@ -287,7 +287,7 @@ func (d *Downloader) Progress() ethereum.SyncProgress {
 	case UltraLightSync:
 		current = d.lightchain.CurrentHeader().Number.Uint64()
 	}
-	log.Debug(fmt.Sprintf("Current head is %v", current))
+	log.Debug("Ethstats: sync progress", "head", current)
 	return ethereum.SyncProgress{
 		StartingBlock: d.syncStatsChainOrigin,
 		CurrentBlock:  current,
