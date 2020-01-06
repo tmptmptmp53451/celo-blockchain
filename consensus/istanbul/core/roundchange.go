@@ -147,8 +147,8 @@ func (c *core) handleRoundChangeCertificate(proposal istanbul.Subject, roundChan
 			}
 			// We must use the proposal in the prepared certificate with the highest round number. (See OSDI 99, Section 4.4)
 			// Older prepared certificates may be generated, but if no node committed, there is no guarantee that
-			// it will be the next pre-prepare. If one node committed, that block is guaranteed (by quorum intersection)
-			// to be the next pre-prepare. That (higher view) prepared cert should override older perpared certs for
+			// it will be the next preprepare. If one node committed, that block is guaranteed (by quorum intersection)
+			// to be the next preprepare. That (higher view) prepared cert should override older perpared certs for
 			// blocks that were not committed.
 			// Also reject round change messages where the prepared view is greater than the round change view.
 			msgLogger = msgLogger.New("prepared_round", preparedView.Round, "prepared_seq", preparedView.Sequence)

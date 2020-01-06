@@ -363,7 +363,7 @@ func TestHandlePreprepare(t *testing.T) {
 			}
 
 			for i, v := range sys.backends {
-				// i == 0 is primary backend, it is responsible for send PRE-PREPARE messages to others.
+				// i == 0 is primary backend, it is responsible for send PREPREPARE messages to others.
 				if i == 0 {
 					continue
 				}
