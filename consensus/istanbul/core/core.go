@@ -212,11 +212,15 @@ func (c *core) commit() error {
 	if proposal != nil {
 		aggregatedSeal, err := GetAggregatedSeal(c.current.Commits(), c.current.Round())
 		if err != nil {
-			c.waitForDesiredRound(new(big.Int).Add(c.current.Round(), common.Big1))
+			nextRound := new(big.Int).Add(c.current.Round(), common.Big1)
+			c.logger.Warn("Error on commit, waiting for desired round", "reason", "getAggregatedSeal", "err", err, "desired_round", nextRound)
+			c.waitForDesiredRound(nextRound)
 			return nil
 		}
 		if err := c.backend.Commit(proposal, aggregatedSeal); err != nil {
-			c.waitForDesiredRound(new(big.Int).Add(c.current.Round(), common.Big1))
+			nextRound := new(big.Int).Add(c.current.Round(), common.Big1)
+			c.logger.Warn("Error on commit, waiting for desired round", "reason", "backend.Commit", "err", err, "desired_round", nextRound)
+			c.waitForDesiredRound(nextRound)
 			return nil
 		}
 	}
@@ -307,7 +311,7 @@ func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbu
 	request := c.current.PendingRequest()
 	// Search for a valid request in round change messages.
 	// The proposal must come from the prepared certificate with the highest round number.
-	// All preprepared certificates from the same round are assumed to be the same proposal or no proposal (guaranteed by quorum intersection)
+	// All prepared certificates from the same round are assumed to be the same proposal or no proposal (guaranteed by quorum intersection)
 	maxRound := big.NewInt(-1)
 	for _, message := range roundChangeCertificate.RoundChangeMessages {
 		var roundChangeMsg *istanbul.RoundChange
@@ -320,7 +324,7 @@ func (c *core) getPreprepareWithRoundChangeCertificate(round *big.Int) (*istanbu
 			continue
 		}
 
-		preparedCertificateView, err := c.verifyPreparedCertificate(roundChangeMsg.PreparedCertificate)
+		preparedCertificateView, err := c.getViewFromVerifiedPreparedCertificate(roundChangeMsg.PreparedCertificate)
 		if err != nil {
 			logger.Error("Unexpected: could not verify a previously received PreparedCertificate message", "src_m", message)
 			return &istanbul.Request{}, istanbul.RoundChangeCertificate{}, err

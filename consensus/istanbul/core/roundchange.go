@@ -135,7 +135,7 @@ func (c *core) handleRoundChangeCertificate(proposal istanbul.Subject, roundChan
 		// Verify ROUND CHANGE message is for the same sequence AND an equal or subsequent round as the proposal.
 		// We have already called checkMessage by this point and checked the proposal's and PREPREPARE's sequence match.
 		if roundChange.View.Sequence.Cmp(proposal.View.Sequence) != 0 || roundChange.View.Round.Cmp(proposal.View.Round) < 0 {
-			msgLogger.Error("Round change in certificate for an earlier view", "roundChange.View", "err", err)
+			msgLogger.Error("Round change in certificate for a different sequence or an earlier round", "err", err)
 			return errInvalidRoundChangeCertificateMsgView
 		}
 
@@ -387,7 +387,7 @@ func (rcs *roundChangeSet) String() string {
 		strings.Join(msgsForRoundStr, ", "))
 }
 
-// Gets a round change certificate for a specific round. Includes all messages of that round or later.
+// Gets a round change certificate for a specific round. Includes quorumSize messages of that round or later.
 // If the total is less than quorumSize, returns an empty cert and errFailedCreateRoundChangeCertificate.
 func (rcs *roundChangeSet) getCertificate(minRound *big.Int, quorumSize int) (istanbul.RoundChangeCertificate, error) {
 	rcs.mu.Lock()
@@ -407,14 +407,16 @@ func (rcs *roundChangeSet) getCertificate(minRound *big.Int, quorumSize int) (is
 		}
 		for _, message := range rcs.msgsForRound[r].Values() {
 			messages = append(messages, *message)
+
+			// Stop when we've added a quorum of the highest-round messages.
+			if len(messages) >= quorumSize {
+				return istanbul.RoundChangeCertificate{
+					RoundChangeMessages: messages,
+				}, nil
+			}
 		}
 	}
 
-	if len(messages) >= quorumSize {
-		return istanbul.RoundChangeCertificate{
-			RoundChangeMessages: messages,
-		}, nil
-	}
-
+	// Didn't find a quorum of messages. Return an empty certificate with error.
 	return istanbul.RoundChangeCertificate{}, errFailedCreateRoundChangeCertificate
 }
