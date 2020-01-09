@@ -27,6 +27,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
+	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -78,11 +79,14 @@ type core struct {
 	logger         log.Logger
 	selectProposer istanbul.ProposerSelector
 
-	backend               istanbul.Backend
-	events                *event.TypeMuxSubscription
-	finalCommittedSub     *event.TypeMuxSubscription
-	timeoutSub            *event.TypeMuxSubscription
-	futurePreprepareTimer *time.Timer
+	backend           istanbul.Backend
+	events            *event.TypeMuxSubscription
+	finalCommittedSub *event.TypeMuxSubscription
+	timeoutSub        *event.TypeMuxSubscription
+
+	futurePreprepareTimer         *time.Timer
+	resendRoundChangeMessageTimer *time.Timer
+	roundChangeTimer              *time.Timer
 
 	validateFn func([]byte, []byte) (common.Address, error)
 
@@ -92,8 +96,7 @@ type core struct {
 	current   RoundState
 	handlerWg *sync.WaitGroup
 
-	roundChangeSet   *roundChangeSet
-	roundChangeTimer *time.Timer
+	roundChangeSet *roundChangeSet
 
 	pendingRequests   *prque.Prque
 	pendingRequestsMu *sync.Mutex
@@ -264,7 +267,7 @@ func GetAggregatedSeal(seals MessageSet, round *big.Int) (types.IstanbulAggregat
 func UnionOfSeals(aggregatedSignature types.IstanbulAggregatedSeal, seals MessageSet) (types.IstanbulAggregatedSeal, error) {
 	// TODO(asa): Check for round equality...
 	// Check who already has signed the message
-	newBitmap := aggregatedSignature.Bitmap
+	newBitmap := new(big.Int).Set(aggregatedSignature.Bitmap)
 	committedSeals := [][]byte{}
 	committedSeals = append(committedSeals, aggregatedSignature.Signature)
 	for _, v := range seals.Values() {
@@ -281,7 +284,7 @@ func UnionOfSeals(aggregatedSignature types.IstanbulAggregatedSeal, seals Messag
 
 		// if the bit was not set, this means we should add this signature to
 		// the batch
-		if aggregatedSignature.Bitmap.Bit(int(valIndex)) == 0 {
+		if newBitmap.Bit(int(valIndex)) == 0 {
 			newBitmap.SetBit(newBitmap, (int(valIndex)), 1)
 			committedSeals = append(committedSeals, commit.CommittedSeal)
 		}
@@ -418,7 +421,7 @@ func (c *core) startNewRound(round *big.Int) error {
 	if roundChange && c.isProposer() && request != nil {
 		c.sendPreprepare(request, roundChangeCertificate)
 	}
-	c.newRoundChangeTimer()
+	c.resetRoundChangeTimer()
 
 	logger.Debug("New round", "new_round", newView.Round, "new_seq", newView.Sequence, "new_proposer", c.current.Proposer(), "valSet", c.current.ValidatorSet().List(), "size", c.current.ValidatorSet().Size(), "isProposer", c.isProposer())
 	return nil
@@ -435,10 +438,6 @@ func (c *core) waitForDesiredRound(r *big.Int) error {
 	}
 
 	logger.Debug("Round Change: Waiting for desired round")
-	desiredView := &istanbul.View{
-		Sequence: new(big.Int).Set(c.current.Sequence()),
-		Round:    new(big.Int).Set(r),
-	}
 
 	// Perform all of the updates
 	_, headAuthor := c.backend.GetCurrentHeadBlockAndAuthor()
@@ -448,13 +447,13 @@ func (c *core) waitForDesiredRound(r *big.Int) error {
 		return err
 	}
 
-	c.newRoundChangeTimerForView(desiredView)
+	c.resetRoundChangeTimer()
 
 	// Process Backlog Messages
 	c.backlog.updateState(c.current.View(), c.current.State())
 
 	// Send round change
-	c.sendRoundChange(r)
+	c.sendRoundChange()
 	return nil
 }
 
@@ -538,36 +537,88 @@ func (c *core) isProposer() bool {
 func (c *core) stopFuturePreprepareTimer() {
 	if c.futurePreprepareTimer != nil {
 		c.futurePreprepareTimer.Stop()
+		c.futurePreprepareTimer = nil
 	}
 }
 
-func (c *core) stopTimer() {
-	c.stopFuturePreprepareTimer()
+func (c *core) stopRoundChangeTimer() {
 	if c.roundChangeTimer != nil {
 		c.roundChangeTimer.Stop()
+		c.roundChangeTimer = nil
 	}
 }
 
-func (c *core) newRoundChangeTimer() {
-	c.newRoundChangeTimerForView(c.current.View())
+func (c *core) stopResendRoundChangeTimer() {
+	if c.resendRoundChangeMessageTimer != nil {
+		c.resendRoundChangeMessageTimer.Stop()
+		c.resendRoundChangeMessageTimer = nil
+	}
 }
 
-func (c *core) newRoundChangeTimerForView(view *istanbul.View) {
-	c.stopTimer()
+func (c *core) stopTimers() {
+	c.stopFuturePreprepareTimer()
+	c.stopRoundChangeTimer()
+	c.stopResendRoundChangeTimer()
+}
 
-	timeout := time.Duration(c.config.RequestTimeout) * time.Millisecond
-	round := view.Round.Uint64()
+func (c *core) getRoundChangeTimeout() time.Duration {
+	baseTimeout := time.Duration(c.config.RequestTimeout) * time.Millisecond
+	round := c.current.DesiredRound().Uint64()
 	if round == 0 {
 		// timeout for first round takes into account expected block period
-		timeout += time.Duration(c.config.BlockPeriod) * time.Second
+		return baseTimeout + time.Duration(c.config.BlockPeriod)*time.Second
 	} else {
 		// timeout for subsequent rounds adds an exponential backoff.
-		timeout += time.Duration(math.Pow(2, float64(round))) * time.Second
+		return baseTimeout + time.Duration(math.Pow(2, float64(round)))*time.Duration(c.config.TimeoutBackoffFactor)*time.Millisecond
+	}
+}
+
+// Reset then set the timer that causes a timeoutAndMoveToNextRoundEvent to be processed.
+// This may also reset the timer for the next resendRoundChangeEvent.
+func (c *core) resetRoundChangeTimer() {
+	c.stopTimers()
+
+	view := &istanbul.View{Sequence: c.current.Sequence(), Round: c.current.DesiredRound()}
+	timeout := c.getRoundChangeTimeout()
+	c.roundChangeTimer = time.AfterFunc(timeout, func() {
+		c.sendEvent(timeoutAndMoveToNextRoundEvent{view})
+	})
+
+	if c.current.DesiredRound().Cmp(common.Big1) > 0 {
+		logger := c.newLogger("func", "resetRoundChangeTimer")
+		logger.Info("Reset round change timer", "timeout_ms", timeout/time.Millisecond)
 	}
 
-	c.roundChangeTimer = time.AfterFunc(timeout, func() {
-		c.sendEvent(timeoutEvent{&istanbul.View{Sequence: view.Sequence, Round: view.Round}})
-	})
+	c.resetResendRoundChangeTimer()
+}
+
+// Reset then, if in StateWaitingForNewRound and on round whose timeout is greater than MinResendRoundChangeTimeout,
+// set a timer that is at most MaxResendRoundChangeTimeout that causes a resendRoundChangeEvent to be processed.
+func (c *core) resetResendRoundChangeTimer() {
+	c.stopResendRoundChangeTimer()
+	if c.current.State() == StateWaitingForNewRound {
+		minResendTimeout := time.Duration(c.config.MinResendRoundChangeTimeout) * time.Millisecond
+		resendTimeout := c.getRoundChangeTimeout() / 2
+		if resendTimeout < minResendTimeout {
+			return
+		}
+		maxResendTimeout := time.Duration(c.config.MaxResendRoundChangeTimeout) * time.Millisecond
+		if resendTimeout > maxResendTimeout {
+			resendTimeout = maxResendTimeout
+		}
+		view := &istanbul.View{Sequence: c.current.Sequence(), Round: c.current.DesiredRound()}
+		c.resendRoundChangeMessageTimer = time.AfterFunc(resendTimeout, func() {
+			c.sendEvent(resendRoundChangeEvent{view})
+		})
+	}
+}
+
+// Broadcast round change message for current desired round and reset timer.
+func (c *core) resendRoundChangeMessage() {
+	if c.current.State() == StateWaitingForNewRound {
+		c.sendRoundChange()
+	}
+	c.resetResendRoundChangeTimer()
 }
 
 func (c *core) checkValidatorSignature(data []byte, sig []byte) (common.Address, error) {
@@ -595,4 +646,24 @@ func (c *core) Sequence() *big.Int {
 		return nil
 	}
 	return c.current.Sequence()
+}
+
+func (c *core) verifyProposal(proposal istanbul.Proposal) (time.Duration, error) {
+	logger := c.newLogger("func", "verifyProposal", "proposal", proposal.Hash())
+	if verificationStatus, isCached := c.current.GetProposalVerificationStatus(proposal.Hash()); isCached {
+		logger.Trace("verification status cache hit", "verificationStatus", verificationStatus)
+		return 0, verificationStatus
+	} else {
+		logger.Trace("verification status cache miss")
+
+		duration, err := c.backend.Verify(proposal)
+		logger.Trace("proposal verify return values", "duration", duration, "err", err)
+
+		// Don't cache the verification status if it's a future block
+		if err != consensus.ErrFutureBlock {
+			c.current.SetProposalVerificationStatus(proposal.Hash(), err)
+		}
+
+		return duration, err
+	}
 }
