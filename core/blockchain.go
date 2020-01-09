@@ -1320,6 +1320,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 		if err != nil {
 			return it.index, events, coalescedLogs, err
 		}
+
+		log.Info("(victor) Processing block for insertion", "number", block.Number())
 		// Process block using the parent state as reference point.
 		t0 := time.Now()
 		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
@@ -1328,6 +1330,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 			bc.reportBlock(block, receipts, err)
 			return it.index, events, coalescedLogs, err
 		}
+		log.Info("(victor) Done processing block for insertion", "number", block.Number())
+
 		// Validate the state using the default validator
 		if err := bc.Validator().ValidateState(block, parent, state, receipts, usedGas); err != nil {
 			bc.reportBlock(block, receipts, err)

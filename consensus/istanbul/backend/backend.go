@@ -462,12 +462,14 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 	// Make a copy of the state
 	state = state.Copy()
 
+	log.Info("(victor) Processing block for istanbul.Verify", "number", block.Number())
 	// Apply this block's transactions to update the state
 	receipts, _, usedGas, err := sb.processBlock(block, state)
 	if err != nil {
 		log.Error("verify - Error in processing the block", "err", err)
 		return 0, err
 	}
+	log.Info("(victor) Done processing block for istanbul.Verify", "number", block.Number())
 
 	// Validate the block
 	if err := sb.validateState(block, state, receipts, usedGas); err != nil {

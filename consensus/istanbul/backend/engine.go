@@ -446,12 +446,15 @@ func (sb *Backend) LookbackWindow() uint64 {
 // Note, the block header and state database might be updated to reflect any
 // consensus rules that happen at finalization (e.g. block rewards).
 func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header, receipts []*types.Receipt, randomness *types.Randomness) (*types.Block, error) {
+	start := time.Now()
+	log.Info("(victor) Begin block finalization", "number", header.Number)
 
 	snapshot := state.Snapshot()
 	err := sb.setInitialGoldTokenTotalSupplyIfUnset(header, state)
 	if err != nil {
 		state.RevertToSnapshot(snapshot)
 	}
+	log.Info("(victor) Set initial gold supply", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	// Trigger an update to the gas price minimum in the GasPriceMinimum contract based on block congestion
 	snapshot = state.Snapshot()
@@ -459,6 +462,7 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 	if err != nil {
 		state.RevertToSnapshot(snapshot)
 	}
+	log.Info("(victor) Updated gas price minimum", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	sb.logger.Trace("Finalizing", "block", header.Number.Uint64(), "epochSize", sb.config.Epoch)
 	if istanbul.IsLastBlockOfEpoch(header.Number.Uint64(), sb.config.Epoch) {
@@ -467,6 +471,7 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 		if err != nil {
 			state.RevertToSnapshot(snapshot)
 		}
+		log.Info("(victor) Distributed epoch rewards", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 	}
 
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
@@ -478,6 +483,8 @@ func (sb *Backend) Finalize(chain consensus.ChainReader, header *types.Header, s
 		receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 		receipts = append(receipts, receipt)
 	}
+
+	defer log.Info("(victor) Done finalizing block", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	// Assemble and return the final block for sealing
 	return types.NewBlock(header, txs, nil, receipts, randomness), nil

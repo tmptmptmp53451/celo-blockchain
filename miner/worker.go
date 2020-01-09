@@ -1055,6 +1055,7 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 // commit runs any post-transaction state modifications, assembles the final block
 // and commits new work if consensus engine is running.
 func (w *worker) commit(uncles []*types.Header, interval func(), update bool, start time.Time) error {
+	log.Info("(victor) Begin commit block", "number", w.current.header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := make([]*types.Receipt, len(w.current.receipts))
 	for i, l := range w.current.receipts {
@@ -1064,6 +1065,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 	s := w.current.state.Copy()
 
 	block, err := w.engine.Finalize(w.chain, w.current.header, s, w.current.txs, uncles, w.current.receipts, w.current.randomness)
+	log.Info("(victor) Finalized block", "number", block.Number(), "elapsed", common.PrettyDuration(time.Since(start)))
 
 	// Set the validator set diff in the new header if we're using Istanbul and it's the last block of the epoch
 	if istanbul, ok := w.engine.(consensus.Istanbul); ok {
@@ -1082,6 +1084,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 		receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 		receipts = append(receipts, receipt)
 	}
+	log.Info("(victor) Created bloom filter", "number", block.Number(), "elapsed", common.PrettyDuration(time.Since(start)))
 
 	if err != nil {
 		log.Error("Unable to finalize block", "err", err)
@@ -1107,6 +1110,7 @@ func (w *worker) commit(uncles []*types.Header, interval func(), update bool, st
 			log.Info("Worker has exited")
 		}
 	}
+	log.Info("(victor) Done committing block", "number", block.Number(), "elapsed", common.PrettyDuration(time.Since(start)))
 	if update {
 		w.updateSnapshot()
 	}

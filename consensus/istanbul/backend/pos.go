@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
@@ -38,15 +39,21 @@ import (
 )
 
 func (sb *Backend) distributeEpochPaymentsAndRewards(header *types.Header, state *state.StateDB) error {
+	start := time.Now()
+	log.Info("(victor) Begin distributing rewards", "number", header.Number)
+
 	err := epoch_rewards.UpdateTargetVotingYield(header, state)
 	if err != nil {
 		return err
 	}
+	log.Info("(victor) Updated target voting yield", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
+
 	validatorEpochPayment, totalVoterRewards, err := epoch_rewards.CalculateTargetEpochPaymentAndRewards(header, state)
 	if err != nil {
 		return err
 	}
 	log.Debug("Calculated target epoch payment and rewards", "validatorEpochPayment", validatorEpochPayment, "totalVoterRewards", totalVoterRewards)
+	log.Info("(victor) Calculated rewards", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	// The validator set that signs off on the last block of the epoch is the one that we need to
 	// iterate over.
@@ -56,27 +63,32 @@ func (sb *Backend) distributeEpochPaymentsAndRewards(header *types.Header, state
 		sb.logger.Error(err.Error())
 		return err
 	}
+	log.Info("(victor) Got validators", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	uptimes, err := sb.updateValidatorScores(header, state, valSet)
 	if err != nil {
 		return err
 	}
+	log.Info("(victor) Updated validator scores", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	totalEpochPayments, err := sb.distributeEpochPayments(header, state, valSet, validatorEpochPayment)
 	if err != nil {
 		return err
 	}
+	log.Info("(victor) Distributed epoch payments", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	totalEpochRewards, err := sb.distributeEpochRewards(header, state, valSet, totalVoterRewards, uptimes)
 	if err != nil {
 		return err
 	}
+	log.Info("(victor) Distributed epoch rewards", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	stableTokenAddress, err := contract_comm.GetRegisteredAddress(params.StableTokenRegistryId, header, state)
 	if err != nil {
 		return err
 	}
 	totalEpochPaymentsConvertedToGold, err := currency.Convert(totalEpochPayments, stableTokenAddress, nil)
+	log.Info("(victor) Converted epoch payments to Gold", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	reserveAddress, err := contract_comm.GetRegisteredAddress(params.ReserveRegistryId, header, state)
 	if err != nil {
@@ -87,6 +99,8 @@ func (sb *Backend) distributeEpochPaymentsAndRewards(header *types.Header, state
 	} else {
 		return errors.New("Unable to fetch reserve address for epoch rewards distribution")
 	}
+	log.Info("(victor) Added gold to reserve", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
+	defer log.Info("(victor) Done distributing rewards", "number", header.Number, "elapsed", common.PrettyDuration(time.Since(start)))
 
 	return sb.increaseGoldTokenTotalSupply(header, state, big.NewInt(0).Add(totalEpochRewards, totalEpochPaymentsConvertedToGold))
 }
