@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -359,6 +360,7 @@ func (m *Message) FromPayload(b []byte, validateFn func([]byte, []byte) (common.
 	if err != nil {
 		return err
 	}
+	log.Debug("Decoded Message:", "msg", m)
 
 	// Validate message (on a message without Signature)
 	if validateFn != nil {

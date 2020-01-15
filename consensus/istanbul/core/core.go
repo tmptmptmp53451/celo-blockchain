@@ -18,6 +18,7 @@ package core
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
@@ -239,15 +240,23 @@ func (c *core) finalizeMessage(msg *istanbul.Message) ([]byte, error) {
 	// Add sender address
 	msg.Address = c.address
 
+	nosigPayload, _ := msg.PayloadNoSig()
 	if err := msg.Sign(c.backend.Sign); err != nil {
 		return nil, err
 	}
+
+	c.logger.Debug("MSG TO SEND", "msg", msg, "m.addr", msg.Address.String(), "m.sig", hex.EncodeToString(msg.Signature), "payload", hex.EncodeToString(nosigPayload))
+
+	signatureAddress, _ := istanbul.GetSignatureAddress(nosigPayload, msg.Signature)
+	c.logger.Debug("MSG Signature Address", "signAddr", signatureAddress, "add", msg.Address.String())
 
 	// Convert to payload
 	payload, err := msg.Payload()
 	if err != nil {
 		return nil, err
 	}
+
+	c.logger.Debug("MSG TO SEND", "msg", msg)
 
 	return payload, nil
 }

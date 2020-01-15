@@ -17,12 +17,18 @@
 package istanbul
 
 import (
+	"fmt"
+	"io/ioutil"
 	"math/big"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -306,3 +312,75 @@ func TestForwardMessageRLPEncoding(t *testing.T) {
 		t.Fatalf("RLP Encode/Decode mismatch. Got %v, expected %v", result, original)
 	}
 }
+
+func TestMessageSignAndVerify(t *testing.T) {
+	// Create a temporary folder to work with
+	workdir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("Failed to create temporary work dir: %v", err)
+	}
+	defer os.RemoveAll(workdir)
+
+	// Create an encrypted keystore with standard crypto parameters
+	ks := keystore.NewKeyStore(filepath.Join(workdir, "keystore"), keystore.StandardScryptN, keystore.StandardScryptP)
+
+	// Create a new account with the specified encryption passphrase
+	account, err := ks.NewAccount("Creation password")
+	if err != nil {
+		t.Fatalf("Failed to create new account: %v", err)
+	}
+
+	err = ks.Unlock(account, "Creation password")
+	if err != nil {
+		t.Fatalf("Failed to unlock  account: %v", err)
+	}
+
+	signerFn := func(data []byte) ([]byte, error) {
+		hashData := crypto.Keccak256(data)
+		return ks.SignHash(account, hashData)
+	}
+
+	m := &Message{
+		Code:      MsgPreprepare,
+		Msg:       []byte{10, 20, 40},
+		Address:   account.Address,
+		Signature: []byte{},
+	}
+	if err = m.Sign(signerFn); err != nil {
+		t.Fatalf("Failed to sign message: %v", err)
+	}
+
+	rawData, err := rlp.EncodeToBytes(m)
+	if err != nil {
+		t.Fatalf("Failed to encode message: %v", err)
+	}
+
+	decodedMsg := new(Message)
+	err = decodedMsg.FromPayload(rawData, GetSignatureAddress)
+	if err != nil {
+		t.Fatalf("Failed to decode message: %v", err)
+	}
+	fmt.Println(account.Address.String())
+	fmt.Println()
+
+}
+
+/*
+To sign a message:
+
+msg.Sign(signerFn)
+where signerFn is backend.Sign()
+backend.Sign() uses c.signFn which is defined on `Authorized()` call
+Authorized is called with `Wallet.Sign()`
+and wallet is obtained from an AccountManager
+
+To verify a message:
+
+we call msg.FromPayload(validateFn)
+There's a couple of validatFn...
+but we use checkValidatorSignature() from backend
+Another use is istanbul.GetSignatureAddress
+
+
+
+*/

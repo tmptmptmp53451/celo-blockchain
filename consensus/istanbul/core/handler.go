@@ -35,6 +35,13 @@ func (c *core) Start() error {
 	c.current = roundState
 	c.roundChangeSet = newRoundChangeSet(c.current.ValidatorSet())
 
+	addrList := make([]string, len(c.current.ValidatorSet().List()))
+	for i, val := range c.current.ValidatorSet().List() {
+		addrList[i] = val.Address().Hex()
+	}
+
+	c.logger.Debug("Initial Validators", "validators", addrList)
+
 	// Reset the Round Change timer for the current round to timeout.
 	// (If we've restored RoundState such that we are in StateWaitingForRoundChange,
 	// this may also start a timer to send a repeat round change message.)
@@ -167,7 +174,7 @@ func (c *core) handleMsg(payload []byte) error {
 
 	// Decode message and check its signature
 	msg := new(istanbul.Message)
-	logger.Debug("Receiving: ", "payload", hexutil.Encode(payload))
+	logger.Debug("Got new message", "payload", hexutil.Encode(payload))
 	if err := msg.FromPayload(payload, c.validateFn); err != nil {
 		logger.Debug("Failed to decode message from payload", "err", err)
 		return err

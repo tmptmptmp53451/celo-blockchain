@@ -57,6 +57,8 @@ func CheckValidatorSignature(valSet ValidatorSet, data []byte, sig []byte) (comm
 		return common.Address{}, err
 	}
 
+	log.Debug("Found Signer", "signer", signer, "valSet", valSet)
+
 	// 2. Check validator
 	if _, val := valSet.GetByAddress(signer); val != nil {
 		return val.Address(), nil
