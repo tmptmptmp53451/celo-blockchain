@@ -780,7 +780,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 	// Create a helper to check if a gas allowance results in an executable transaction
 	executable := func(gas uint64) bool {
 		args.Gas = hexutil.Uint64(gas)
-
+		args.GasPrice = hexutil.Big(*big.NewInt(1))
 		_, _, failed, err := s.doCall(ctx, args, rpc.PendingBlockNumber, 0)
 		if err != nil || failed {
 			return false
