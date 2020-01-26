@@ -260,7 +260,7 @@ geth-darwin-386:
 	# currently doesn't compile on Ubuntu
 	rustup target add i686-apple-darwin
 	cd vendor/github.com/celo-org/bls-zexe/bls && cargo build --target=i686-apple-darwin --release
-	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -v ./cmd/geth
+	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -tags=crosscompile -v ./cmd/geth
 	@echo "Darwin 386 cross compilation done:"
 	@ls -ld $(GOBIN)/geth-darwin-* | grep 386
 
@@ -269,7 +269,7 @@ geth-darwin-amd64:
 	# currently doesn't compile on Ubuntu
 	rustup target add x86_64-apple-darwin
 	cd vendor/github.com/celo-org/bls-zexe/bls && cargo build --target=x86_64-apple-darwin --release
-	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -v ./cmd/geth
+	build/env.sh go run build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -tags=crosscompile -v ./cmd/geth
 	@echo "Darwin amd64 cross compilation done:"
 	@ls -ld $(GOBIN)/geth-darwin-* | grep amd64
 
