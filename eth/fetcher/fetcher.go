@@ -292,6 +292,7 @@ func (f *Fetcher) loop() {
 		for !f.queue.Empty() {
 			op := f.queue.PopItem().(*inject)
 			hash := op.block.Hash()
+			log.Trace("Pop import from queue", "peer", op.origin, "number", op.block.Number())
 			if f.queueChangeHook != nil {
 				f.queueChangeHook(hash, false)
 			}
@@ -302,10 +303,12 @@ func (f *Fetcher) loop() {
 				if f.queueChangeHook != nil {
 					f.queueChangeHook(hash, true)
 				}
+				log.Trace("Queued block is too high")
 				break
 			}
 			// Otherwise if fresh and still unknown, try and import
 			if number+maxUncleDist < height || f.getBlock(hash) != nil {
+				log.Trace("forgetBlock since we already know about this")
 				f.forgetBlock(hash)
 				continue
 			}
@@ -357,6 +360,7 @@ func (f *Fetcher) loop() {
 			f.enqueue(op.origin, op.block)
 
 		case hash := <-f.done:
+			log.Trace("forgetBlock since we are done")
 			// A pending import finished, remove all traces of the notification
 			f.forgetHash(hash)
 			f.forgetBlock(hash)
@@ -630,7 +634,10 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 	// Run the import on a new thread
 	log.Debug("Importing propagated block", "peer", peer, "number", block.Number(), "hash", hash)
 	go func() {
-		defer func() { f.done <- hash }()
+		defer func() {
+			log.Trace("Done Importing", "hash", hash)
+			f.done <- hash
+		}()
 
 		// If the parent's unknown, abort insertion
 		parent := f.getBlock(block.ParentHash())
