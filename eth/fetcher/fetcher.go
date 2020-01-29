@@ -621,7 +621,7 @@ func (f *Fetcher) enqueue(peer string, block *types.Block) {
 		if f.queueChangeHook != nil {
 			f.queueChangeHook(op.block.Hash(), true)
 		}
-		log.Debug("Queued propagated block", "peer", peer, "number", block.Number(), "hash", hash, "queued", f.queue.Size())
+		log.Debug("Queued propagated block", "peer", peer, "number", block.Number(), "hash", hash, "queued", f.queue.Size(), "count", count)
 	}
 }
 
@@ -635,7 +635,7 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 	log.Debug("Importing propagated block", "peer", peer, "number", block.Number(), "hash", hash)
 	go func() {
 		defer func() {
-			log.Trace("Done Importing", "hash", hash)
+			log.Trace("Done Importing", "peer", peer, "number", block.Number(), "hash", hash)
 			f.done <- hash
 		}()
 
