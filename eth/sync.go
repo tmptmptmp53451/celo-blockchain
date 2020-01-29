@@ -164,6 +164,7 @@ func (pm *ProtocolManager) syncer() {
 func (pm *ProtocolManager) synchronise(peer *peer) {
 	// Short circuit if no peers are available
 	if peer == nil {
+		log.Trace("No peers available to sync")
 		return
 	}
 	// Make sure the peer's TD is higher than our own

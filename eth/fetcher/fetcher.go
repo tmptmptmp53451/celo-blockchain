@@ -716,6 +716,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 // state.
 func (f *Fetcher) forgetBlock(hash common.Hash) {
 	if insert := f.queued[hash]; insert != nil {
+		log.Trace("forgetBlock", "peer", insert.origin, "number", insert.block.Number())
 		f.queues[insert.origin]--
 		if f.queues[insert.origin] == 0 {
 			delete(f.queues, insert.origin)
