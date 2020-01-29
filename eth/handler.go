@@ -178,6 +178,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 		return blockchain.CurrentBlock().NumberU64()
 	}
 	inserter := func(blocks types.Blocks) (int, error) {
+		log.Trace("Inserter")
 		// If sync hasn't reached the checkpoint yet, deny importing weird blocks.
 		//
 		// Ideally we would also compare the head block's timestamp and similarly reject

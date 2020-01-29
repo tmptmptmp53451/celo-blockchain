@@ -661,6 +661,9 @@ func (f *Fetcher) insert(peer string, block *types.Block) {
 			f.dropPeer(peer)
 			return
 		}
+
+		log.Trace("Verified header of imported block", "peer", peer, "number", block.Number(), "hash", hash)
+
 		// Run the actual import and log any issues
 		if _, err := f.insertChain(types.Blocks{block}); err != nil {
 			log.Debug("Propagated block import failed", "peer", peer, "number", block.Number(), "hash", hash, "err", err)
@@ -725,7 +728,7 @@ func (f *Fetcher) forgetHash(hash common.Hash) {
 // state.
 func (f *Fetcher) forgetBlock(hash common.Hash) {
 	if insert := f.queued[hash]; insert != nil {
-		log.Trace("forgetBlock", "peer", insert.origin, "number", insert.block.Number())
+		log.Trace("forgetBlock", "peer", insert.origin, "number", insert.block.Number(), "count", f.queues[insert.origin])
 		f.queues[insert.origin]--
 		if f.queues[insert.origin] == 0 {
 			delete(f.queues, insert.origin)
