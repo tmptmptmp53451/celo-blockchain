@@ -202,6 +202,7 @@ func NewProtocolManager(config *params.ChainConfig, checkpoint *params.TrustedCh
 		if err == nil {
 			atomic.StoreUint32(&manager.acceptTxs, 1) // Mark initial sync done on any fetcher import
 		}
+		log.Trace("Inserter done", "n", n, "err", err)
 		return n, err
 	}
 	manager.fetcher = fetcher.New(blockchain.GetBlockByHash, validator, manager.BroadcastBlock, heighter, inserter, manager.removePeer)
