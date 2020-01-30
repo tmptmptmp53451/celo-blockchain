@@ -240,7 +240,9 @@ func New(ctx *node.ServiceContext, config *Config) (*Ethereum, error) {
 			for {
 				select {
 				case chainHeadEvent := <-chainHeadCh:
+					log.Trace("Handle new chain head")
 					istanbul.NewChainHead(chainHeadEvent.Block)
+					log.Trace("Handled new chain head")
 				case <-chainHeadSub.Err():
 					log.Error("Error in istanbul's subscription to the blockchain's chainhead event", "err", err)
 					return

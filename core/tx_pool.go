@@ -345,10 +345,12 @@ func (pool *TxPool) loop() {
 		select {
 		// Handle ChainHeadEvent
 		case ev := <-pool.chainHeadCh:
+			log.Info("tx pool subscribe start")
 			if ev.Block != nil {
 				pool.requestReset(head.Header(), ev.Block.Header())
 				head = ev.Block
 			}
+			log.Info("tx pool subscribe finish")
 
 		// System shutdown.
 		case <-pool.chainHeadSub.Err():

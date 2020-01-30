@@ -19,6 +19,7 @@ package eth
 import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -46,7 +47,9 @@ func (eth *Ethereum) startEthEntryUpdate(ln *enode.LocalNode) {
 		for {
 			select {
 			case <-newHead:
+				log.Trace("process new Head enr")
 				ln.Set(eth.currentEthEntry())
+				log.Trace("processed new Head enr")
 			case <-sub.Err():
 				// Would be nice to sync with eth.Stop, but there is no
 				// good way to do that.

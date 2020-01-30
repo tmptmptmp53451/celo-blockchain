@@ -326,9 +326,11 @@ func (s *Service) loop() {
 						log.Warn("Requested history report failed", "err", err)
 					}
 				case head := <-headCh:
+					log.Info("ethstats subscribe start")
 					if err = s.reportBlock(conn, head); err != nil {
 						log.Warn("Block stats report failed", "err", err)
 					}
+					log.Info("ethstats subscribe finish")
 				case <-txCh:
 					if err = s.reportPending(conn); err != nil {
 						log.Warn("Transaction stats report failed", "err", err)

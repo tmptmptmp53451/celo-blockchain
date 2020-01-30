@@ -293,11 +293,12 @@ func (pool *TxPool) eventLoop() {
 	for {
 		select {
 		case ev := <-pool.chainHeadCh:
+			log.Info("light start subscribe")
 			pool.setNewHead(ev.Block.Header())
 			// hack in order to avoid hogging the lock; this part will
 			// be replaced by a subsequent PR.
 			time.Sleep(time.Millisecond)
-
+			log.Info("light finish subscribe")
 		// System stopped
 		case <-pool.chainHeadSub.Err():
 			return

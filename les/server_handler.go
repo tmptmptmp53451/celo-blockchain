@@ -953,6 +953,10 @@ func (h *serverHandler) broadcastHeaders() {
 	for {
 		select {
 		case ev := <-headCh:
+			log.Info("les server handler start subscribe")
+			defer func() {
+				log.Info("les server handler finish subscribe")
+			}()
 			peers := h.server.peers.AllPeers()
 			if len(peers) == 0 {
 				continue

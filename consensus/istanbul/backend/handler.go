@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p"
 	lru "github.com/hashicorp/golang-lru"
 )
@@ -219,9 +220,10 @@ func (sb *Backend) NewWork() error {
 //    2)  Refresh the validator connections if it's a proxy or non proxied validator
 func (sb *Backend) NewChainHead(newBlock *types.Block) {
 	if istanbul.IsLastBlockOfEpoch(newBlock.Number().Uint64(), sb.config.Epoch) {
+		log.Trace("consensus wants lock for new chain head")
 		sb.coreMu.RLock()
 		defer sb.coreMu.RUnlock()
-
+		log.Trace("consensus acquired lock for new chain head")
 		valset := sb.getValidators(newBlock.Number().Uint64(), newBlock.Hash())
 
 		// Output whether this validator was or wasn't elected for the

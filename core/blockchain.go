@@ -1548,9 +1548,13 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 	}
 	// Pre-checks passed, start the full block imports
 	bc.wg.Add(1)
+	log.Trace("InsertChain try to get lock")
 	bc.chainmu.Lock()
+	log.Trace("InsertChain try to got lock")
+
 	n, events, logs, err := bc.insertChain(chain, true)
 	bc.chainmu.Unlock()
+	log.Trace("InsertChain yielded lock")
 	bc.wg.Done()
 
 	bc.PostChainEvents(events, logs)
@@ -1567,6 +1571,7 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 // is imported, but then new canon-head is added before the actual sidechain
 // completes, then the historic state could be pruned again
 func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []interface{}, []*types.Log, error) {
+	log.Trace("BlockChain insertChain")
 	// If the chain is terminating, don't even bother starting up
 	if atomic.LoadInt32(&bc.procInterrupt) == 1 {
 		return 0, nil, nil, nil
@@ -1840,6 +1845,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, []
 	if lastCanon != nil && bc.CurrentBlock().Hash() == lastCanon.Hash() {
 		events = append(events, ChainHeadEvent{lastCanon})
 	}
+
+	log.Trace("BlockChain insertChain done")
 	return it.index, events, coalescedLogs, err
 }
 
@@ -2119,6 +2126,7 @@ func (bc *BlockChain) reorg(oldBlock, newBlock *types.Block) error {
 // posts them into the event feed.
 // TODO: Should not expose PostChainEvents. The chain events should be posted in WriteBlock.
 func (bc *BlockChain) PostChainEvents(events []interface{}, logs []*types.Log) {
+	log.Trace("PostChainEvents")
 	// post event logs for further processing
 	if logs != nil {
 		bc.logsFeed.Send(logs)
@@ -2126,15 +2134,21 @@ func (bc *BlockChain) PostChainEvents(events []interface{}, logs []*types.Log) {
 	for _, event := range events {
 		switch ev := event.(type) {
 		case ChainEvent:
+			log.Trace("send ChainEvent")
 			bc.chainFeed.Send(ev)
 
 		case ChainHeadEvent:
+			log.Trace("send ChainHeadEvent")
+
 			bc.chainHeadFeed.Send(ev)
 
 		case ChainSideEvent:
+			log.Trace("send ChainSideEvent")
+
 			bc.chainSideFeed.Send(ev)
 		}
 	}
+	log.Trace("PostChainEvents#done")
 }
 
 func (bc *BlockChain) update() {
