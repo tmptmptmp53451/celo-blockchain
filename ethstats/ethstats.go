@@ -216,10 +216,12 @@ func (s *Service) loop() {
 			select {
 			// Notify of chain head events, but drop if too frequent
 			case head := <-chainHeadCh:
+				log.Info("ethstats chainHead")
 				select {
 				case headCh <- head.Block:
 				default:
 				}
+				log.Info("ethstats chainHead done")
 
 			// Notify of new transaction events, but drop if too frequent
 			case <-txEventCh:
