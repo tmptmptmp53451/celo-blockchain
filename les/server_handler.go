@@ -954,17 +954,16 @@ func (h *serverHandler) broadcastHeaders() {
 		select {
 		case ev := <-headCh:
 			log.Info("les server handler start subscribe")
-			defer func() {
-				log.Info("les server handler finish subscribe")
-			}()
 			peers := h.server.peers.AllPeers()
 			if len(peers) == 0 {
+				log.Info("les server handler finish subscribe")
 				continue
 			}
 			header := ev.Block.Header()
 			hash, number := header.Hash(), header.Number.Uint64()
 			td := h.blockchain.GetTd(hash, number)
 			if td == nil || td.Cmp(lastTd) <= 0 {
+				log.Info("les server handler finish subscribe")
 				continue
 			}
 			var reorg uint64
@@ -993,6 +992,7 @@ func (h *serverHandler) broadcastHeaders() {
 					p.queueSend(func() { p.SendAnnounce(signedAnnounce) })
 				}
 			}
+			log.Info("les server handler finish subscribe")
 		case <-h.closeCh:
 			return
 		}
