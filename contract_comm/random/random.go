@@ -161,7 +161,7 @@ func GetLastRandomness(coinbase common.Address, db *ethdb.Database, header *type
 		}
 		parentBlockHashBytes = parentBlockHash.Bytes()
 	}
-	log.Error("GetLastRandomness", "lastCommitment", lastCommitment, "parentBlockHashBytes", hexutil.Encode(parentBlockHashBytes), "randomness", hexutil.Encode(crypto.Keccak256Hash(append(seed, parentBlockHashBytes...))))
+	log.Error("GetLastRandomness", "lastCommitment", lastCommitment, "parentBlockHashBytes", hexutil.Encode(parentBlockHashBytes), "randomness", crypto.Keccak256Hash(append(seed, parentBlockHashBytes...)))
 	return crypto.Keccak256Hash(append(seed, parentBlockHashBytes...)), nil
 }
 
