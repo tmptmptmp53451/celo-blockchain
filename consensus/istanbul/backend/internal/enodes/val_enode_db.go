@@ -18,6 +18,7 @@ package enodes
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/istanbul"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -48,7 +50,7 @@ const (
 const (
 	// dbNodeExpiration = 24 * time.Hour // Time after which an unseen node should be dropped.
 	// dbCleanupCycle   = time.Hour      // Time period for running the expiration task.
-	dbVersion = 3
+	dbVersion = 4
 )
 
 // ValidatorEnodeHandler is handler to Add/Remove events. Events execute within write lock
@@ -76,23 +78,25 @@ func nodeIDKey(nodeID enode.ID) []byte {
 
 // AddressEntry is an entry for the valEnodeTable
 type AddressEntry struct {
-	Node    *enode.Node
-	Version uint
+	Node        *enode.Node
+	ECDSAPubKey *ecdsa.PublicKey
+	Version     uint
 }
 
 func (ve *AddressEntry) String() string {
-	return fmt.Sprintf("{enodeURL: %v, version: %v}", ve.Node.String(), ve.Version)
+	return fmt.Sprintf("{enodeURL: %v, publicKeyAddress: %v, version: %v}", ve.Node.String(), crypto.PubkeyToAddress(*ve.ECDSAPubKey), ve.Version)
 }
 
 // Implement RLP Encode/Decode interface
 type rlpEntry struct {
-	EnodeURL string
-	Version  uint
+	EnodeURL       string
+	ECDSAPublicKey []byte
+	Version        uint
 }
 
 // EncodeRLP serializes AddressEntry into the Ethereum RLP format.
 func (ve *AddressEntry) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, rlpEntry{ve.Node.String(), ve.Version})
+	return rlp.Encode(w, rlpEntry{ve.Node.String(), crypto.FromECDSAPub(ve.ECDSAPubKey), ve.Version})
 }
 
 // DecodeRLP implements rlp.Decoder, and load the AddressEntry fields from a RLP stream.
@@ -107,7 +111,12 @@ func (ve *AddressEntry) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 
-	*ve = AddressEntry{Node: node, Version: entry.Version}
+	ecdsaPubKey, err := crypto.UnmarshalPubkey(entry.ECDSAPublicKey)
+	if err != nil {
+		return err
+	}
+
+	*ve = AddressEntry{Node: node, ECDSAPubKey: ecdsaPubKey, Version: entry.Version}
 	return nil
 }
 

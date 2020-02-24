@@ -491,7 +491,13 @@ func (sb *Backend) handleAnnounceMsg(peer consensus.Peer, payload []byte) error 
 					return err
 				}
 
-				if err := sb.valEnodeTable.Upsert(map[common.Address]*vet.AddressEntry{msg.Address: {Node: node, Version: announceData.Version}}); err != nil {
+				publicKey, err := istanbul.GetSignaturePubKey(msg)
+				if err != nil {
+					logger.Error("Error is retrieving public key from msg payload and signature")
+					return err
+				}
+
+				if err := sb.valEnodeTable.Upsert(map[common.Address]*vet.AddressEntry{msg.Address: {Node: node, ECDSAPubKey: publicKey, Version: announceData.Version}}); err != nil {
 					logger.Warn("Error in upserting a valenode entry", "AnnounceData", announceData.String(), "error", err)
 					return err
 				}

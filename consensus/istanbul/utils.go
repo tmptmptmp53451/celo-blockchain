@@ -17,6 +17,7 @@
 package istanbul
 
 import (
+	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
 	"math/big"
@@ -48,6 +49,18 @@ func GetSignatureAddress(data []byte, sig []byte) (common.Address, error) {
 		return common.Address{}, err
 	}
 	return crypto.PubkeyToAddress(*pubkey), nil
+}
+
+// GetSignaturePubkey gets the signer public key from the signature
+func GetSignaturePubKey(m *Message) (*ecdsa.PublicKey, error) {
+	payload, err := m.PayloadNoSig()
+	if err != nil {
+		return nil, err
+	}
+
+	hashData := crypto.Keccak256(payload)
+
+	return crypto.SigToPub(hashData, m.Signature)
 }
 
 func CheckValidatorSignature(valSet ValidatorSet, data []byte, sig []byte) (common.Address, error) {
