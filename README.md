@@ -1,6 +1,6 @@
 ## Celo Blockchain
 
-Official golang implementation of the Celo Blockchain, based off of the [official golang implementation of the Ethereum protocol](https://github.com/ethereum/go-ethereum).
+Official golang implementation of the Celo Blockchain, based off of the [official golang implementation of the Ethereum protocol](https://github.com/ethereum/go-ethereum). 
 
 ## Building the source
 
