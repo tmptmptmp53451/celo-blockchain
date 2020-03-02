@@ -1,4 +1,4 @@
-module github.com/ethereum/go-ethereum
+module github.com/tmptmptmp53451/celo-blockchain
 
 go 1.13
 
