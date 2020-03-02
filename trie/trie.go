@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 var (

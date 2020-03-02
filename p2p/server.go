@@ -29,17 +29,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/discv5"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/mclock"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/discover"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/discv5"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enr"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/nat"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/netutil"
 )
 
 const (

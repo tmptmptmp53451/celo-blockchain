@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
+	"github.com/tmptmptmp53451/celo-blockchain/common/math"
 )
 
 var _ = (*structLogMarshaling)(nil)

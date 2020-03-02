@@ -19,11 +19,11 @@ package core
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/contract_comm/blockchain_parameters"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus"
+	"github.com/tmptmptmp53451/celo-blockchain/contract_comm/blockchain_parameters"
+	"github.com/tmptmptmp53451/celo-blockchain/core/state"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and

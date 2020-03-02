@@ -26,9 +26,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/metrics"
 	"github.com/golang/snappy"
 )
 

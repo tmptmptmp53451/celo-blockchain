@@ -19,9 +19,9 @@ package vm
 import (
 	"errors"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/math"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so

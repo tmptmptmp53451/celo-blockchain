@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/keystore"
+	"github.com/tmptmptmp53451/celo-blockchain/cmd/utils"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
 	"gopkg.in/urfave/cli.v1"
 )
 

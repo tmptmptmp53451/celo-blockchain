@@ -25,17 +25,17 @@ import (
 	"testing"
 
 	bls "github.com/celo-org/bls-zexe/go"
-	ethAccounts "github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	ethAccounts "github.com/tmptmptmp53451/celo-blockchain/accounts"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/validator"
+	"github.com/tmptmptmp53451/celo-blockchain/core"
+	"github.com/tmptmptmp53451/celo-blockchain/core/rawdb"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 )
 
 type testerValSetDiff struct {

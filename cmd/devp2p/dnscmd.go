@@ -25,11 +25,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/console"
-	"github.com/ethereum/go-ethereum/p2p/dnsdisc"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/keystore"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/console"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/dnsdisc"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 	cli "gopkg.in/urfave/cli.v1"
 )
 

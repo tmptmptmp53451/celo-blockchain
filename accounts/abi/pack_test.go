@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
 )
 
 func TestPack(t *testing.T) {

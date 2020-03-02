@@ -26,14 +26,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/tmptmptmp53451/celo-blockchain"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/core/rawdb"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/ethdb"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
+	"github.com/tmptmptmp53451/celo-blockchain/trie"
 )
 
 // Reduce some of the parameters to make the tester faster.

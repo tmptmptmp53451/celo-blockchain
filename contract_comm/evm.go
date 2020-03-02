@@ -21,14 +21,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/contract_comm/errors"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/abi"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
+	"github.com/tmptmptmp53451/celo-blockchain/contract_comm/errors"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/core/vm"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/metrics"
 )
 
 var (

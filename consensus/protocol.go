@@ -18,9 +18,9 @@
 package consensus
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 )
 
 // Broadcaster defines the interface to enqueue blocks to fetcher, find peer

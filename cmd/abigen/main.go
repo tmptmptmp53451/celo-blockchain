@@ -24,11 +24,11 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common/compiler"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/abi/bind"
+	"github.com/tmptmptmp53451/celo-blockchain/cmd/utils"
+	"github.com/tmptmptmp53451/celo-blockchain/common/compiler"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

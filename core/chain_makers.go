@@ -20,14 +20,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/misc"
+	"github.com/tmptmptmp53451/celo-blockchain/core/state"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/core/vm"
+	"github.com/tmptmptmp53451/celo-blockchain/ethdb"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
 )
 
 // BlockGen creates blocks for testing.

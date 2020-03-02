@@ -22,9 +22,9 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 )
 
 var (

@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 
-	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/rpc"
+	ethereum "github.com/tmptmptmp53451/celo-blockchain"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 )
 
 // PublicDownloaderAPI provides an API which gives information about the current synchronisation status.

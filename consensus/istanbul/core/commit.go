@@ -19,8 +19,8 @@ package core
 import (
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 )
 
 func (c *core) sendCommit() {

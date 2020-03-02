@@ -23,10 +23,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 )
 
 func TestLegacyReceiptDecoding(t *testing.T) {

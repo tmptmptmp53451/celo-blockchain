@@ -32,14 +32,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/simulations"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/node"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/simulations"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/simulations/adapters"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 )
 
 // ProtocolTester is the tester environment used for unit testing protocol

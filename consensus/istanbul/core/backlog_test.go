@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
-	"github.com/ethereum/go-ethereum/event"
-	elog "github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/validator"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	elog "github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 func TestCheckMessage(t *testing.T) {

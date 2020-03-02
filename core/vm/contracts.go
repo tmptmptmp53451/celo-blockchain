@@ -25,17 +25,17 @@ import (
 
 	//nolint:goimports
 	bls "github.com/celo-org/bls-zexe/go"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/blake2b"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
-	"github.com/ethereum/go-ethereum/crypto/bn256"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
+	"github.com/tmptmptmp53451/celo-blockchain/common/math"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto/blake2b"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto/bn256"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 	"golang.org/x/crypto/ripemd160"
 )
 

@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/discover"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/discover"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 )
 
 // PrivateAdminAPI is the collection of administrative API methods exposed only

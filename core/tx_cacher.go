@@ -19,7 +19,7 @@ package core
 import (
 	"runtime"
 
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
 )
 
 // senderCacher is a concurrent transaction sender recoverer and cacher.

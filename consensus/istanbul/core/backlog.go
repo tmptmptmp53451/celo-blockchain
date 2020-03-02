@@ -22,10 +22,10 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/prque"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 var (

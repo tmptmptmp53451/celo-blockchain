@@ -19,15 +19,15 @@ package main
 import (
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/external"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/checkpointoracle"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/abi/bind"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/external"
+	"github.com/tmptmptmp53451/celo-blockchain/cmd/utils"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/contracts/checkpointoracle"
+	"github.com/tmptmptmp53451/celo-blockchain/ethclient"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 

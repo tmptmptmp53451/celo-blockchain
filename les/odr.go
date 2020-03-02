@@ -20,11 +20,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/common/mclock"
+	"github.com/tmptmptmp53451/celo-blockchain/core"
+	"github.com/tmptmptmp53451/celo-blockchain/ethdb"
+	"github.com/tmptmptmp53451/celo-blockchain/light"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 // LesOdr implements light.OdrBackend

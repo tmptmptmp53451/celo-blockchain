@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/ethash"
+	"github.com/tmptmptmp53451/celo-blockchain/core"
+	"github.com/tmptmptmp53451/celo-blockchain/eth"
+	"github.com/tmptmptmp53451/celo-blockchain/internal/jsre"
+	"github.com/tmptmptmp53451/celo-blockchain/miner"
+	"github.com/tmptmptmp53451/celo-blockchain/node"
 )
 
 const (

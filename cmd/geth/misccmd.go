@@ -23,10 +23,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tmptmptmp53451/celo-blockchain/cmd/utils"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/ethash"
+	"github.com/tmptmptmp53451/celo-blockchain/eth"
+	"github.com/tmptmptmp53451/celo-blockchain/params"
 	"gopkg.in/urfave/cli.v1"
 )
 

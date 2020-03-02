@@ -20,7 +20,7 @@ package testlog
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 // Logger returns a logger which logs to the unit test log of t.

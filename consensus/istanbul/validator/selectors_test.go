@@ -21,9 +21,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 )
 
 var testAddresses = []string{

@@ -22,17 +22,17 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/signer/core"
+	"github.com/tmptmptmp53451/celo-blockchain"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	"github.com/tmptmptmp53451/celo-blockchain/internal/ethapi"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/signer/core"
 )
 
 type ExternalBackend struct {

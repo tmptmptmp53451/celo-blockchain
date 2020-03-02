@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tmptmptmp53451/celo-blockchain/common/prque"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	"github.com/tmptmptmp53451/celo-blockchain/event"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 func TestCheckRequestMsg(t *testing.T) {

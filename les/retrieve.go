@@ -24,8 +24,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/light"
+	"github.com/tmptmptmp53451/celo-blockchain/common/mclock"
+	"github.com/tmptmptmp53451/celo-blockchain/light"
 )
 
 var (

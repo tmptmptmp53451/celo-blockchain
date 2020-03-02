@@ -21,8 +21,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/common/prque"
+	"github.com/tmptmptmp53451/celo-blockchain/common/mclock"
+	"github.com/tmptmptmp53451/celo-blockchain/common/prque"
 )
 
 // servingQueue allows running tasks in a limited number of threads and puts the

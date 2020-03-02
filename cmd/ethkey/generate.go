@@ -23,9 +23,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/accounts/keystore"
+	"github.com/tmptmptmp53451/celo-blockchain/cmd/utils"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
 	"github.com/pborman/uuid"
 	"gopkg.in/urfave/cli.v1"
 )

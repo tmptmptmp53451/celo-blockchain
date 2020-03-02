@@ -21,8 +21,8 @@ package geth
 import (
 	"errors"
 
-	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
+	ethereum "github.com/tmptmptmp53451/celo-blockchain"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
 )
 
 // Subscription represents an event subscription where events are

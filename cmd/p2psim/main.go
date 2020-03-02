@@ -45,12 +45,12 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/simulations"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/simulations"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/simulations/adapters"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 

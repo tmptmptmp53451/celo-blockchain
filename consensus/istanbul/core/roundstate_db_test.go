@@ -6,11 +6,11 @@ import (
 	"math/rand"
 	"testing"
 
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/validator"
 )
 
 func TestRSDBRoundStateDB(t *testing.T) {

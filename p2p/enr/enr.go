@@ -40,7 +40,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 )
 
 const SizeLimit = 300 // maximum encoded size of a node record in bytes

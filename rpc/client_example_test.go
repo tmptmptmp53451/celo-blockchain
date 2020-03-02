@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 )
 
 // In this example, our client wishes to track the latest 'block number'

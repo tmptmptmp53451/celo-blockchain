@@ -23,8 +23,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 )
 
 func TestUDPv4_Lookup(t *testing.T) {

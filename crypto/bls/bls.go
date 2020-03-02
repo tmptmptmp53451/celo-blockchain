@@ -10,7 +10,7 @@ import (
 
 	//nolint:goimports
 	bls "github.com/celo-org/bls-zexe/go"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tmptmptmp53451/celo-blockchain/crypto"
 )
 
 const (

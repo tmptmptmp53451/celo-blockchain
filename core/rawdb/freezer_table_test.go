@@ -25,8 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tmptmptmp53451/celo-blockchain/common/fdlimit"
+	"github.com/tmptmptmp53451/celo-blockchain/metrics"
 )
 
 func init() {

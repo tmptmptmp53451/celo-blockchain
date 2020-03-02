@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tmptmptmp53451/celo-blockchain/metrics"
 )
 
 var (

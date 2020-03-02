@@ -22,11 +22,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/signer/core"
-	"github.com/ethereum/go-ethereum/signer/rules/deps"
-	"github.com/ethereum/go-ethereum/signer/storage"
+	"github.com/tmptmptmp53451/celo-blockchain/internal/ethapi"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
+	"github.com/tmptmptmp53451/celo-blockchain/signer/core"
+	"github.com/tmptmptmp53451/celo-blockchain/signer/rules/deps"
+	"github.com/tmptmptmp53451/celo-blockchain/signer/storage"
 	"github.com/robertkrimen/otto"
 )
 

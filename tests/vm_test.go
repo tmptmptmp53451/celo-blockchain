@@ -19,7 +19,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/tmptmptmp53451/celo-blockchain/core/vm"
 )
 
 func TestVM(t *testing.T) {

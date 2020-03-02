@@ -20,15 +20,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/istanbul"
-	vet "github.com/ethereum/go-ethereum/consensus/istanbul/backend/internal/enodes"
-	"github.com/ethereum/go-ethereum/consensus/istanbul/core"
-	"github.com/ethereum/go-ethereum/consensus/istanbul/validator"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul"
+	vet "github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/backend/internal/enodes"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/core"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/validator"
+	"github.com/tmptmptmp53451/celo-blockchain/core/types"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/rpc"
 )
 
 // API is a user facing RPC API to dump Istanbul state

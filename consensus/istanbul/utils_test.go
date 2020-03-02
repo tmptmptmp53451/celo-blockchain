@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	blscrypto "github.com/ethereum/go-ethereum/crypto/bls"
+	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
 )
 
 func TestValSetDiff(t *testing.T) {

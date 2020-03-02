@@ -4,9 +4,9 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	vet "github.com/ethereum/go-ethereum/consensus/istanbul/backend/internal/enodes"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	vet "github.com/tmptmptmp53451/celo-blockchain/consensus/istanbul/backend/internal/enodes"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 )
 
 func TestHandleValEnodeShareMsg(t *testing.T) {

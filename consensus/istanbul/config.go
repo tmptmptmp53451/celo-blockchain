@@ -17,8 +17,8 @@
 package istanbul
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/common"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 )
 
 type ProposerPolicy uint64

@@ -17,7 +17,7 @@
 package les
 
 import (
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tmptmptmp53451/celo-blockchain/rlp"
 )
 
 // lesEntry is the "les" ENR entry. This is set for LES servers only.

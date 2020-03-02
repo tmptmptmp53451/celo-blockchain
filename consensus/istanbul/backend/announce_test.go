@@ -4,8 +4,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/consensus/consensustest"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/tmptmptmp53451/celo-blockchain/consensus/consensustest"
+	"github.com/tmptmptmp53451/celo-blockchain/p2p/enode"
 )
 
 func TestHandleIstAnnounce(t *testing.T) {
