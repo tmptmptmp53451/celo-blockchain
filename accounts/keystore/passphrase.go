@@ -38,13 +38,10 @@ import (
 	"os"
 	"path/filepath"
 
-	bls "github.com/celo-org/bls-zexe/go"
 	"github.com/tmptmptmp53451/celo-blockchain/accounts"
 	"github.com/tmptmptmp53451/celo-blockchain/common"
-	"github.com/tmptmptmp53451/celo-blockchain/common/math"
 	"github.com/tmptmptmp53451/celo-blockchain/crypto"
 
-	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 	"github.com/pborman/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
@@ -187,38 +184,7 @@ func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
-	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
-	blsPrivateKeyBytes, err := blscrypto.ECDSAToBLS(key.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-	privateKey, err := bls.DeserializePrivateKey(blsPrivateKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-	defer privateKey.Destroy()
-	publicKey, err := privateKey.ToPublic()
-	if err != nil {
-		return nil, err
-	}
-	defer publicKey.Destroy()
-	publicKeyBytes, err := publicKey.Serialize()
-	if err != nil {
-		return nil, err
-	}
-
-	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP)
-	if err != nil {
-		return nil, err
-	}
-	encryptedKeyJSONV3 := encryptedKeyJSONV3{
-		hex.EncodeToString(key.Address[:]),
-		hex.EncodeToString(publicKeyBytes),
-		cryptoStruct,
-		key.Id.String(),
-		version,
-	}
-	return json.Marshal(encryptedKeyJSONV3)
+	panic("not implemented")
 }
 
 // DecryptKey decrypts a key from a json blob, returning the private key itself.

@@ -24,14 +24,13 @@ import (
 	"math/big"
 
 	//nolint:goimports
-	bls "github.com/celo-org/bls-zexe/go"
+
 	"github.com/tmptmptmp53451/celo-blockchain/common"
 	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
 	"github.com/tmptmptmp53451/celo-blockchain/common/math"
 	"github.com/tmptmptmp53451/celo-blockchain/core/types"
 	"github.com/tmptmptmp53451/celo-blockchain/crypto"
 	"github.com/tmptmptmp53451/celo-blockchain/crypto/blake2b"
-	blscrypto "github.com/tmptmptmp53451/celo-blockchain/crypto/bls"
 	"github.com/tmptmptmp53451/celo-blockchain/crypto/bn256"
 	"github.com/tmptmptmp53451/celo-blockchain/log"
 	"github.com/tmptmptmp53451/celo-blockchain/params"
@@ -624,41 +623,7 @@ func (c *proofOfPossession) RequiredGas(input []byte) uint64 {
 }
 
 func (c *proofOfPossession) Run(input []byte, caller common.Address, evm *EVM, gas uint64) ([]byte, uint64, error) {
-	gas, err := debitRequiredGas(c, input, gas)
-	if err != nil {
-		return nil, gas, err
-	}
-
-	// input is comprised of 3 arguments:
-	//   address:   20 bytes, an address used to generate the proof-of-possession
-	//   publicKey: 96 bytes, representing the public key (defined as a const in bls package)
-	//   signature: 48 bytes, representing the signature on `address` (defined as a const in bls package)
-	// the total length of input required is the sum of these constants
-	if len(input) != common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES {
-		return nil, gas, ErrInputLength
-	}
-	addressBytes := input[:common.AddressLength]
-
-	publicKeyBytes := input[common.AddressLength : common.AddressLength+blscrypto.PUBLICKEYBYTES]
-	publicKey, err := bls.DeserializePublicKey(publicKeyBytes)
-	if err != nil {
-		return nil, gas, err
-	}
-	defer publicKey.Destroy()
-
-	signatureBytes := input[common.AddressLength+blscrypto.PUBLICKEYBYTES : common.AddressLength+blscrypto.PUBLICKEYBYTES+blscrypto.SIGNATUREBYTES]
-	signature, err := bls.DeserializeSignature(signatureBytes)
-	if err != nil {
-		return nil, gas, err
-	}
-	defer signature.Destroy()
-
-	err = publicKey.VerifyPoP(addressBytes, signature)
-	if err != nil {
-		return nil, gas, err
-	}
-
-	return true32Byte, gas, nil
+	panic("not implemented")
 }
 
 // bn256PairingIstanbul implements a pairing pre-compile for the bn256 curve
