@@ -27,13 +27,13 @@ import (
 	"io"
 	"math/big"
 
+	"github.com/tmptmptmp53451/protobuf/proto"
 	"github.com/tmptmptmp53451/celo-blockchain/accounts"
 	"github.com/tmptmptmp53451/celo-blockchain/accounts/usbwallet/trezor"
 	"github.com/tmptmptmp53451/celo-blockchain/common"
 	"github.com/tmptmptmp53451/celo-blockchain/common/hexutil"
 	"github.com/tmptmptmp53451/celo-blockchain/core/types"
 	"github.com/tmptmptmp53451/celo-blockchain/log"
-	"github.com/golang/protobuf/proto"
 )
 
 // ErrTrezorPINNeeded is returned if opening the trezor requires a PIN code. In
