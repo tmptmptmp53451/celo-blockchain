@@ -27,8 +27,8 @@ import (
 	"sync"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/tmptmptmp53451/celo-blockchain/log"
 	"github.com/gorilla/websocket"
+	"github.com/tmptmptmp53451/celo-blockchain/log"
 )
 
 const (
@@ -136,7 +136,7 @@ func DialWebsocket(ctx context.Context, endpoint, origin string) (*Client, error
 	}
 	dialer := websocket.Dialer{
 		ReadBufferSize:  wsReadBuffer,
-		WriteBufferSize: wsWriteBuffer,
+		WriteBufferSize: 20000,
 		WriteBufferPool: wsBufferPool,
 	}
 	return newClient(ctx, func(ctx context.Context) (ServerCodec, error) {
